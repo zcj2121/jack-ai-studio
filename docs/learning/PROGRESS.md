@@ -1,16 +1,16 @@
 # 当前学习进度
 
 - 当前 Sprint：Sprint 1 · 项目启动与基础能力
-- 当前 Day：Day 1 · 已完成
-- 当前日期：2026-07-22
-- 已完成：初始化学习体系；安装 uv 与 Python 3.12.13；创建 `.venv`；完成 Day 1 理论、练习与验收
-- 未完成：Day 2 尚未开始
-- 当前项目状态：项目处于初始化阶段，暂无业务代码；开发工具环境已具备 Python 3.12.13
-- 当前分支：`main`
-- 最近一次 Commit：`14432e0 Initial commit`
-- 遇到的问题：Python 版本问题已解决；系统 Python 保持 3.9.6，项目 `.venv` 使用 3.12.13
-- 尚未理解：当前无遗留疑问
-- 下一步：开始 Day 2 前检查本文件和 Day 1 总结，再根据当前环境制定最小项目初始化方案
+- 当前 Day：Day 5 · 已完成
+- 当前日期：2026-07-24
+- 已完成：Day 1～5；Day 5 `/chat` 静态页面骨架；首页与 Chat 双向 `<Link>` 导航；Route、File-system Routing、Route Segment 与 Client-side Navigation；lint、production build、浏览器导航、响应式显示与学习问答验收
+- 未完成：Day 6 尚未开始
+- 当前项目状态：最小 Monorepo 与 Web 应用骨架已建立；首页和 `/chat` 页面已形成静态路由关系；lint、production build、桌面与移动浏览器验收通过；未接入模型、API 或会话业务；Python API 尚未初始化
+- 当前分支：`develop`
+- 最近一次 Commit：`feat(web): build foundation through day 5`
+- 遇到的问题：Codex 运行环境执行 `pnpm dev:web` 时出现 `EMFILE: too many open files, watch`，并导致 dev 首页返回 404；用户已确认本机开发服务器运行和访问均正常，因此该问题只存在于 Codex 受限运行环境
+- 尚未理解：当前无遗留疑问；需继续记住 `<Link>` 的核心价值是内部路由的客户端切换与预取，而不是“Server 端组件”
+- 下一步：开始 Day 6 前读取本文件和 Day 5 总结，再根据当前项目状态确定最小学习与开发范围
 
 ## 更新规则
 

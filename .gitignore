@@ -1,5 +1,19 @@
 # Python 虚拟环境
 .venv/
 
+# Node.js 依赖与构建缓存
+node_modules/
+.pnpm-store/
+.next/
+
+# 本地环境变量与日志
+.env
+.env.*
+!.env.example
+*.log
+
+# 操作系统文件
+.DS_Store
+
 # JetBrains IDE 本地配置
 .idea/
