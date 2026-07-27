@@ -2,7 +2,17 @@
 
 这里将存放 Jack AI Studio 的 Python API 服务。
 
-当前 Day 2 只明确前后端目录边界，不提前安装 FastAPI 或实现业务接口。后续进入 Python Web API 学习时，再在此目录初始化服务。
+Day 6 已建立零第三方依赖的 Python 程序入口，用于学习 Module、Function、list、dict、Type Hints 和 `__main__` 入口判断。
+
+当前入口只会在终端输出服务状态，不是 HTTP API，也不会启动端口。后续进入 Python Web API 学习时，再按当天范围引入 FastAPI。
+
+## 运行
+
+在仓库根目录执行：
+
+```bash
+.venv/bin/python apps/api/app/main.py
+```
 
 ## 计划职责
 
