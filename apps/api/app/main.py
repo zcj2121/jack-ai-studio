@@ -2,6 +2,7 @@
 
 import sys
 
+from fastapi import FastAPI
 from pydantic import BaseModel, Field, ValidationError
 
 SERVICE_INFO: dict[str, object] = {
@@ -23,6 +24,12 @@ class ServiceStatus(BaseModel):
     status: str = Field(min_length=1)
     python_version: str = Field(min_length=1)
     planned_capabilities: list[str] = Field(min_length=1)
+
+
+app = FastAPI(
+    title="Jack AI Studio API",
+    version="0.1.0",
+)
 
 
 def build_service_status(
@@ -73,6 +80,16 @@ def demonstrate_validation_error() -> str:
         return f"invalid data rejected: {invalid_fields}"
 
     return "invalid data was not rejected"
+
+
+@app.get("/health", response_model=ServiceStatus)
+async def get_health() -> ServiceStatus:
+    """返回经过 Schema 校验的 API 服务状态。"""
+
+    return build_service_status(
+        SERVICE_INFO,
+        PLANNED_CAPABILITIES,
+    )
 
 
 def main() -> None:

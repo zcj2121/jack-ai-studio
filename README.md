@@ -4,7 +4,7 @@ Jack AI Studio 是一个面向开发者的 AI Workspace，也是一个 90 天 AI
 
 ## 当前状态
 
-项目正在进行 Sprint 1，目前已建立最小 pnpm workspace、Next.js Web 应用骨架，以及带 Pydantic 运行时数据校验的 Python 程序入口。当前 Python 程序只用于基础学习和终端验证，尚未提供 HTTP API。
+项目正在进行 Sprint 1，目前已建立最小 pnpm workspace、Next.js Web 应用骨架，以及带 Pydantic 运行时数据校验的 Python API。当前 API 仅提供 `GET /health` 健康检查，尚未接入模型或业务数据。
 
 ## 目录
 
@@ -36,6 +36,7 @@ pnpm dev:web
 pnpm lint:web
 pnpm build:web
 uv run python apps/api/app/main.py
+uv run uvicorn app.main:app --app-dir apps/api --host 127.0.0.1 --port 8000
 ```
 
 学习进度以 [`docs/learning/PROGRESS.md`](docs/learning/PROGRESS.md) 为准。

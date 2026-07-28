@@ -351,3 +351,83 @@
 **举例：** 空的 `name` 和 `planned_capabilities` 会产生对应字段的错误记录。
 
 **项目用途：** 后续 API 会把校验问题转换为可理解的错误响应，并避免无效数据进入业务层。
+
+## 36. HTTP（超文本传输协议）
+
+**专业解释：** HTTP 是客户端与服务器交换 Request 和 Response 的应用层协议。
+
+**大白话：** 它像前端和后端共同遵守的寄件格式，规定请求送到哪里、想做什么以及服务器如何回复。
+
+**举例：** 浏览器向 `/health` 发送 GET Request，API 返回状态码 `200` 和 JSON Response。
+
+**项目用途：** Jack AI Studio Web、未来第三方客户端和 Python API 通过 HTTP 通信。
+
+## 37. FastAPI
+
+**专业解释：** FastAPI 是基于 Python Type Hints、Starlette 和 Pydantic 构建的 ASGI Web Framework。
+
+**大白话：** 它类似 Python 后端中的 Koa 加路由和运行时 Schema 集成。
+
+**举例：** `app = FastAPI()` 创建应用，`@app.get("/health")` 注册健康检查路由。
+
+**项目用途：** 后续用于承载 Chat、Provider、RAG、Agent 和 MCP 等后端 API。
+
+## 38. Endpoint（接口端点）
+
+**专业解释：** Endpoint 是由 HTTP Method 和 Path 共同确定的服务访问入口。
+
+**大白话：** Method 表示要做什么，Path 表示要找哪个服务，两者组合才是一个完整接口。
+
+**举例：** `GET /health` 是一个 Endpoint，`POST /health` 是另一个不同的 Endpoint。
+
+**项目用途：** 用于组织服务健康检查、Chat 消息和模型配置等 API。
+
+## 39. GET
+
+**专业解释：** GET 是用于读取资源的 HTTP Method，通常不应修改服务器业务状态。
+
+**大白话：** 它类似查询操作，只拿数据，不提交业务变更。
+
+**举例：** `GET /health` 读取当前 API 服务状态。
+
+**项目用途：** 后续用于读取会话、知识库列表和服务状态。
+
+## 40. JSON
+
+**专业解释：** JSON 是使用对象、数组和基础值表达结构化数据的文本格式。
+
+**大白话：** 它和前端常见的 JavaScript Object 长得相似，是前后端传递数据的通用格式。
+
+**举例：** FastAPI 会把 `ServiceStatus` 自动序列化为 JSON Response。
+
+**项目用途：** Jack AI Studio 的大部分普通 HTTP API 都会使用 JSON 交换数据。
+
+## 41. ASGI（异步服务器网关接口）
+
+**专业解释：** ASGI 是 Python 异步 Web Server 与 Web Application 之间的标准接口。
+
+**大白话：** 它像统一插座规范，让 Uvicorn 能启动并驱动 FastAPI 应用。
+
+**举例：** Uvicorn 加载 `app.main:app`，通过 ASGI 把 HTTP Request 交给 FastAPI。
+
+**项目用途：** 为未来流式响应、并发请求和长连接能力提供运行基础。
+
+## 42. Uvicorn
+
+**专业解释：** Uvicorn 是负责监听网络端口并运行 ASGI Application 的 Server。
+
+**大白话：** FastAPI 定义“请求怎么处理”，Uvicorn 负责真正把服务开起来并接收请求。
+
+**举例：** `uvicorn app.main:app --app-dir apps/api` 启动当前 API。
+
+**项目用途：** 在本地开发和后续部署中运行 Jack AI Studio 的 FastAPI 应用。
+
+## 43. Decorator（装饰器）
+
+**专业解释：** Decorator 使用 `@` 语法包装或注册函数，在不修改函数主体调用方式的情况下附加行为。
+
+**大白话：** 它像给函数贴一个标签，告诉 FastAPI 这个函数负责哪个 Method 和 Path。
+
+**举例：** `@app.get("/health")` 把下方函数注册为健康检查处理函数。
+
+**项目用途：** FastAPI 使用 Decorator 声明 API 路由、依赖和异常处理等行为。

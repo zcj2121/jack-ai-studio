@@ -2,11 +2,11 @@
 
 这里将存放 Jack AI Studio 的 Python API 服务。
 
-Day 6 已建立 Python 程序入口。Day 7 在此基础上引入 Pydantic，用 `BaseModel` 和 `Field` 定义服务状态 Schema，并在运行时拒绝不符合约束的数据。
+Day 6 已建立 Python 程序入口。Day 7 引入 Pydantic 运行时数据校验。Day 8 使用 FastAPI 和 Uvicorn 建立首个只读 HTTP Health Endpoint。
 
-当前入口仍然只会在终端输出正常校验结果和错误数据演示，不是 HTTP API，也不会启动端口。后续进入 Python Web API 学习时，再按当天范围引入 FastAPI。
+当前 API 只提供 `GET /health`，用于验证服务存活和响应结构。尚未接入模型、数据库、用户或会话业务。
 
-## 运行
+## 运行终端示例
 
 在仓库根目录执行：
 
@@ -15,6 +15,17 @@ uv run python apps/api/app/main.py
 ```
 
 `uv` 会根据根目录的 `pyproject.toml` 和 `uv.lock` 使用已锁定的依赖版本。
+
+## 启动 HTTP API
+
+```bash
+uv run uvicorn app.main:app --app-dir apps/api --host 127.0.0.1 --port 8000
+```
+
+启动后访问：
+
+- Health Endpoint：`http://127.0.0.1:8000/health`
+- OpenAPI 文档：`http://127.0.0.1:8000/docs`
 
 ## 计划职责
 
