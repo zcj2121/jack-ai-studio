@@ -2,7 +2,9 @@
 
 import sys
 
-SERVICE_INFO: dict[str, str] = {
+from pydantic import BaseModel, Field, ValidationError
+
+SERVICE_INFO: dict[str, object] = {
     "name": "Jack AI Studio API",
     "status": "foundation ready",
 }
@@ -14,33 +16,74 @@ PLANNED_CAPABILITIES: list[str] = [
 ]
 
 
-def format_service_status(
-    service_info: dict[str, str],
-    capabilities: list[str],
-) -> str:
-    """把服务信息整理成便于在终端阅读的状态文本。"""
+class ServiceStatus(BaseModel):
+    """经过运行时校验的服务状态数据。"""
 
-    python_version = f"{sys.version_info.major}.{sys.version_info.minor}"
-    capability_summary = ", ".join(capabilities)
+    name: str = Field(min_length=1)
+    status: str = Field(min_length=1)
+    python_version: str = Field(min_length=1)
+    planned_capabilities: list[str] = Field(min_length=1)
+
+
+def build_service_status(
+    service_info: dict[str, object],
+    capabilities: list[str],
+) -> ServiceStatus:
+    """把普通 Python 数据校验为可信的服务状态模型。"""
+
+    return ServiceStatus.model_validate(
+        {
+            **service_info,
+            "python_version": (
+                f"{sys.version_info.major}.{sys.version_info.minor}"
+            ),
+            "planned_capabilities": capabilities,
+        }
+    )
+
+
+def format_service_status(
+    service_status: ServiceStatus,
+) -> str:
+    """把已校验的服务状态整理成便于在终端阅读的文本。"""
+
+    capability_summary = ", ".join(service_status.planned_capabilities)
 
     return (
-        f"{service_info['name']} | "
-        f"status: {service_info['status']} | "
-        f"Python: {python_version} | "
+        f"{service_status.name} | "
+        f"status: {service_status.status} | "
+        f"Python: {service_status.python_version} | "
         f"planned: {capability_summary}"
     )
 
 
-def main() -> None:
-    """运行 Day 6 的最小状态程序。"""
+def demonstrate_validation_error() -> str:
+    """使用错误数据演示 Pydantic 的运行时校验。"""
 
-    print(format_service_status(SERVICE_INFO, PLANNED_CAPABILITIES))
-    name: str = "haha"
-    print(f"test:{name}")
-    dict1: dict[str, int] = {
-        "age": 1
-    }
-    list1: list[str] = ["a", "b"]
+    try:
+        build_service_status(
+            {"name": "", "status": "foundation ready"},
+            [],
+        )
+    except ValidationError as error:
+        invalid_fields = ", ".join(
+            ".".join(str(part) for part in issue["loc"])
+            for issue in error.errors()
+        )
+        return f"invalid data rejected: {invalid_fields}"
+
+    return "invalid data was not rejected"
+
+
+def main() -> None:
+    """运行 Day 7 的 Pydantic 数据校验示例。"""
+
+    service_status = build_service_status(
+        SERVICE_INFO,
+        PLANNED_CAPABILITIES,
+    )
+    print(format_service_status(service_status))
+    print(demonstrate_validation_error())
 
 
 if __name__ == "__main__":

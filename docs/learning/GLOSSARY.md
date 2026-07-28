@@ -311,3 +311,43 @@
 **举例：** 运行 `main.py` 会调用 `main()` 并输出服务状态。
 
 **项目用途：** Day 6 用它验证 Python 程序；后续真正的 API Server 会有独立启动方式。
+
+## 32. Runtime Validation（运行时校验）
+
+**专业解释：** 程序执行期间检查实际输入是否满足类型、必填项和业务约束。
+
+**大白话：** Type Hints 像表单字段旁的填写说明，Runtime Validation 像真正点击提交时执行的校验规则。
+
+**举例：** 服务名称为空、计划能力列表为空时，Pydantic 在程序运行期间拒绝创建 `ServiceStatus`。
+
+**项目用途：** 后续用于保护 API、模型配置、会话消息和工具调用的数据边界。
+
+## 33. Pydantic
+
+**专业解释：** Pydantic 是使用 Python Type Hints 定义数据模型，并执行数据解析、运行时校验和序列化的库。
+
+**大白话：** 它类似 TypeScript 类型加 Zod 运行时校验的组合。
+
+**举例：** `ServiceStatus.model_validate(raw_data)` 把普通 `dict` 校验成可信模型。
+
+**项目用途：** 它会作为 Jack AI Studio 后端的 Schema 基础，并在后续与 FastAPI 配合校验请求和响应。
+
+## 34. Schema（数据结构契约）
+
+**专业解释：** Schema 描述一组数据有哪些字段、字段类型是什么，以及必须满足哪些约束。
+
+**大白话：** 它像前后端共同遵守的表单说明书，不符合说明的数据不能进入下一步。
+
+**举例：** `ServiceStatus` 要求名称、状态和 Python 版本非空，且至少包含一项计划能力。
+
+**项目用途：** 用于约束 API 输入输出、Provider 配置、Chat Message 和后续 Agent State。
+
+## 35. ValidationError（校验错误）
+
+**专业解释：** Pydantic 在输入无法通过模型校验时抛出的异常，包含失败字段、错误类型和输入信息。
+
+**大白话：** 它不是只说“表单错了”，而是会指出哪个字段违反了哪条规则。
+
+**举例：** 空的 `name` 和 `planned_capabilities` 会产生对应字段的错误记录。
+
+**项目用途：** 后续 API 会把校验问题转换为可理解的错误响应，并避免无效数据进入业务层。
