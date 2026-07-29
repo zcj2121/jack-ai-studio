@@ -1,8 +1,11 @@
 import Link from "next/link";
+import { connection } from "next/server";
 
+import { ApiStatusCard } from "@/components/api-status-card";
 import { FeatureCard, type FeatureCardProps } from "@/components/feature-card";
 import { PromptComposer } from "@/components/prompt-composer";
 import { WorkspaceViewToggle } from "@/components/workspace-view-toggle";
+import { getApiHealth } from "@/lib/api";
 
 const features: FeatureCardProps[] = [
   {
@@ -25,7 +28,10 @@ const features: FeatureCardProps[] = [
   },
 ];
 
-export default function Home() {
+export default async function Home() {
+  await connection();
+  const apiHealth = await getApiHealth();
+
   return (
     <main className="min-h-screen overflow-hidden bg-[var(--ink)] text-[var(--paper)]">
       <div className="mx-auto flex min-h-screen w-full max-w-[1440px] flex-col px-5 py-5 sm:px-8 sm:py-7 lg:px-12">
@@ -43,8 +49,14 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-2 font-mono text-[10px] tracking-[0.18em] text-white/55">
-            <span className="size-2 animate-pulse rounded-full bg-[var(--signal)]" />
-            DAY 05 · ONLINE
+            <span
+              className={`size-2 rounded-full ${
+                apiHealth.state === "online"
+                  ? "animate-pulse bg-[var(--signal)]"
+                  : "bg-amber-300"
+              }`}
+            />
+            DAY 09 · {apiHealth.state.toUpperCase()}
           </div>
         </header>
 
@@ -85,7 +97,7 @@ export default function Home() {
 
             <div className="mb-4 flex items-center justify-between font-mono text-[10px] tracking-[0.18em] text-white/38">
               <span>MODULE ROADMAP</span>
-              <span>05 / 90</span>
+              <span>09 / 90</span>
             </div>
 
             <div className="grid gap-px bg-white/10">
@@ -95,6 +107,10 @@ export default function Home() {
             </div>
           </aside>
         </section>
+
+        <div className="pb-5">
+          <ApiStatusCard health={apiHealth} />
+        </div>
 
         <div className="pb-14 lg:pb-20">
           <PromptComposer />
