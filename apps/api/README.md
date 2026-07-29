@@ -21,13 +21,23 @@ uv run python apps/api/app/main.py
 ## 启动 HTTP API
 
 ```bash
-uv run uvicorn app.main:app --app-dir apps/api --host 127.0.0.1 --port 8000
+pnpm dev:api
 ```
 
 启动后访问：
 
 - Health Endpoint：`http://127.0.0.1:8000/health`
 - OpenAPI 文档：`http://127.0.0.1:8000/docs`
+
+## 自动化测试
+
+在仓库根目录执行：
+
+```bash
+pnpm test:api
+```
+
+当前测试只覆盖 Health 路由函数和注册契约，不代替真实 HTTP 联调。
 
 ## 计划职责
 

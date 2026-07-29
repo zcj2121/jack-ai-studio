@@ -1,16 +1,16 @@
 # 当前学习进度
 
-- 当前 Sprint：Sprint 1 · 项目启动与基础能力
-- 当前 Day：Day 9 · 已完成
+- 当前 Sprint：Sprint 1 · 项目启动与基础能力 · 已完成
+- 当前 Day：Day 10 · 已完成
 - 当前日期：2026-07-29
-- 已完成：Day 1～9；Day 9 Server-side Fetch、API Client、服务端环境变量、Type Guard 与 Graceful Degradation；Next.js 首页读取 FastAPI Health 状态，Online / Offline、桌面/移动端显示和核心概念问答验收
-- 未完成：Day 10 尚未开始
-- 当前项目状态：最小 Monorepo、Next.js Web 应用骨架和 FastAPI Health Endpoint 已建立；首页可展示真实 API Online / Offline 状态；未接入模型、数据库、用户、会话或其他业务 API
+- 已完成：Day 1～10；Sprint 1 基础框架、React/Next.js/Python/Pydantic/FastAPI 基础、前后端 Health 联通、自动化测试与统一 Quality Gate；真实 HTTP、桌面/移动端显示和核心概念问答验收
+- 未完成：Day 11 与 Sprint 2 尚未开始
+- 当前项目状态：最小 Monorepo、Next.js Web 应用骨架、FastAPI Health Endpoint、前后端 Health 联通和 Sprint 1 Quality Gate 已建立；未接入模型、数据库、用户、会话或其他业务 API
 - 当前分支：`develop`
-- 最近一次 Commit：`feat(api): add FastAPI health endpoint for day 8`
-- 遇到的问题：Codex 运行环境执行 `pnpm dev:web` 时出现 `EMFILE: too many open files, watch`，并导致 dev 首页返回 404；用户已确认本机开发服务器运行和访问均正常，因此该问题只存在于 Codex 受限运行环境
+- 最近一次 Commit：`feat(web): connect FastAPI health status for day 9`
+- 遇到的问题：Codex 运行环境执行 `pnpm dev:web` 时出现 `EMFILE: too many open files, watch`；WebStorm 对 `apps/api/tests/test_health.py` 的 `app` 导入仍显示未解析引用，但项目解释器、实际导入、测试和质量门禁均正常，属于暂不阻塞的 IDE Source Root 索引问题
 - 尚未理解：当前无遗留疑问
-- 下一步：开始 Day 10 前读取本文件和 Day 9 总结，再根据 Sprint 1 收尾目标确定最小学习与开发范围
+- 下一步：开始 Day 11 前读取本文件和 Day 10 总结，根据 Sprint 2 AI Chat 目标确定第一个最小模型接入任务
 
 ## 更新规则
 

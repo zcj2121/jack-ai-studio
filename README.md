@@ -4,7 +4,7 @@ Jack AI Studio 是一个面向开发者的 AI Workspace，也是一个 90 天 AI
 
 ## 当前状态
 
-项目正在进行 Sprint 1，目前已建立最小 pnpm workspace、Next.js Web 应用骨架，以及带 Pydantic 运行时数据校验的 Python API。当前 API 仅提供 `GET /health` 健康检查，尚未接入模型或业务数据。
+Sprint 1 已完成，目前已建立最小 pnpm workspace、Next.js Web 应用骨架、带 Pydantic 运行时数据校验的 Python API、Next.js 到 FastAPI 的 Health 联通，以及可重复执行的基础质量门禁。当前 API 仅提供 `GET /health`，尚未接入模型或业务数据。
 
 ## 目录
 
@@ -23,20 +23,34 @@ apps/
 - Python 3.12+
 - uv 0.11+（Python 环境与依赖管理）
 
-安装依赖并启动 Web 应用：
+安装依赖：
 
 ```bash
 pnpm install
+uv sync
+```
+
+分别在两个终端启动 API 与 Web：
+
+```bash
+pnpm dev:api
 pnpm dev:web
 ```
 
-常用验证命令：
+访问：
+
+```text
+Web：http://127.0.0.1:3000
+API Health：http://127.0.0.1:8000/health
+API Docs：http://127.0.0.1:8000/docs
+```
+
+运行 Sprint 1 基础质量门禁：
 
 ```bash
-pnpm lint:web
-pnpm build:web
-uv run python apps/api/app/main.py
-uv run uvicorn app.main:app --app-dir apps/api --host 127.0.0.1 --port 8000
+pnpm check:foundation
 ```
+
+该命令会依次执行 Web ESLint、TypeScript、生产构建，以及 Python 依赖锁、语法编译和 Health 自动化测试。任一步骤失败都会返回非零 Exit Code。
 
 学习进度以 [`docs/learning/PROGRESS.md`](docs/learning/PROGRESS.md) 为准。
