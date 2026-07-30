@@ -1,9 +1,9 @@
 import Link from "next/link";
 
 const workspaceNotes = [
-  "今天先建立 Message、Role 与 ChatRequest 数据契约",
-  "Provider、API Key 和真实模型调用将在后续 Day 按顺序接入",
-  "Schema 校验通过不代表模型已经生成回答",
+  "Provider Adapter 已能转换 ChatRequest 与 Assistant Message",
+  "API Key 只从 FastAPI 服务端环境变量读取",
+  "Mock 测试不会请求真实模型，也不会消耗 Provider 额度",
 ];
 
 export default function ChatPage() {
@@ -29,7 +29,7 @@ export default function ChatPage() {
 
           <div className="flex items-center gap-2 font-mono text-[10px] tracking-[0.18em] text-white/50">
             <span className="size-2 rounded-full bg-amber-300" />
-            MESSAGE CONTRACT · DAY 11
+            PROVIDER ADAPTER · DAY 12
           </div>
         </header>
 
@@ -52,8 +52,8 @@ export default function ChatPage() {
 
           <div className="relative flex min-h-[560px] flex-col border border-white/15 bg-white/[0.025]">
             <div className="flex items-center justify-between border-b border-white/10 px-5 py-4 font-mono text-[10px] tracking-[0.16em] text-white/38">
-              <span>CHAT REQUEST SCHEMA</span>
-              <span>NO PROVIDER</span>
+              <span>OPENAI-COMPATIBLE</span>
+              <span>NO ENDPOINT</span>
             </div>
 
             <div className="grid flex-1 place-items-center px-6 py-12">
@@ -64,12 +64,12 @@ export default function ChatPage() {
                 <h1 className="mt-5 text-[clamp(2.8rem,7vw,6.5rem)] font-semibold leading-[0.9] tracking-[-0.065em]">
                   A quiet place
                   <span className="block font-mono text-[0.62em] font-normal tracking-[-0.04em] text-white/30">
-                    the contract before the model.
+                    one adapter before the endpoint.
                   </span>
                 </h1>
                 <p className="mt-7 max-w-xl text-sm leading-7 text-white/50 sm:text-base">
-                  Chat 已经有明确的后端消息边界。今天只定义模型请求需要的数据，
-                  不把 Schema 校验伪装成真实的 AI 回答。
+                  后端已经具备 Provider 配置和异步调用边界。今天只验证适配器，
+                  不把 Mock 响应伪装成真实的 AI Chat。
                 </p>
 
                 <ul className="mt-8 grid gap-3">
@@ -90,10 +90,10 @@ export default function ChatPage() {
 
             <div className="border-t border-white/10 p-4">
               <div
-                aria-label="Prompt 输入区域将在 Provider 接入后启用"
+                aria-label="Prompt 输入区域将在 Chat Endpoint 接入后启用"
                 className="flex min-h-14 items-center justify-between border border-white/10 bg-black/15 px-4 text-sm text-white/25"
               >
-                <span>Prompt input unlocks after Provider integration.</span>
+                <span>Prompt input unlocks after Chat Endpoint integration.</span>
                 <span className="font-mono text-[10px] tracking-[0.14em]">
                   DISABLED
                 </span>
@@ -103,7 +103,7 @@ export default function ChatPage() {
         </section>
 
         <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-white/15 pt-5 font-mono text-[10px] tracking-[0.16em] text-white/35">
-          <span>MESSAGE / ROLE / PYDANTIC SCHEMA</span>
+          <span>ASYNC / SDK / PROVIDER ADAPTER</span>
           <Link
             href="/"
             className="text-white/55 transition-colors hover:text-[var(--signal)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--signal)]"

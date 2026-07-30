@@ -4,7 +4,7 @@ Jack AI Studio 是一个面向开发者的 AI Workspace，也是一个 90 天 AI
 
 ## 当前状态
 
-Sprint 1 已完成，Sprint 2 AI Chat 已开始。目前已建立基础框架、前后端 Health 联通、统一质量门禁，以及 AI Chat 的 Message、Role 与 ChatRequest 数据契约。当前 API 仅提供 `GET /health`，尚未接入模型或 Chat Endpoint。
+Sprint 1 已完成，Sprint 2 AI Chat 正在推进。目前已建立基础框架、前后端 Health 联通、统一质量门禁、AI Chat 消息契约，以及 OpenAI-compatible Provider 的服务端配置与异步适配边界。当前 API 仍仅提供 `GET /health`，尚未开放 Chat Endpoint 或启用前端输入。
 
 ## 目录
 

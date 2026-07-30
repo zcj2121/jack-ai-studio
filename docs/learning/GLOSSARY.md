@@ -471,3 +471,53 @@
 **举例：** 当前 `ChatRequest` 默认使用 `0.7`，并把允许范围约束为 `0～2`。
 
 **项目用途：** 后续 Provider 会读取该参数控制生成风格，不同模型的实际支持范围仍需由适配层处理。
+
+## 48. Provider Adapter（模型服务适配器）
+
+**专业解释：** Provider Adapter 在项目数据契约与第三方模型 API 之间完成请求转换、调用和响应转换。
+
+**大白话：** 它像统一请求层，让业务代码不用理解每家模型服务的参数细节。
+
+**举例：** 把 `ChatRequest` 转成 OpenAI-compatible `messages`，再把返回文本转成 `ChatMessage`。
+
+**项目用途：** 隔离第三方 SDK，为后续多 Provider 留出清晰边界。
+
+## 49. SDK（软件开发工具包）
+
+**专业解释：** SDK 是服务提供方封装的客户端库，负责认证、请求结构、网络调用和响应对象等能力。
+
+**大白话：** 它类似项目使用 Axios，而不是每次手写底层 HTTP 连接。
+
+**举例：** Python `openai` SDK 提供 `AsyncOpenAI` 客户端。
+
+**项目用途：** Day 12 使用官方 SDK 建立异步 Provider 调用，不自行重复实现底层 HTTP。
+
+## 50. Async I/O（异步输入输出）
+
+**专业解释：** Async I/O 在等待网络或文件操作时释放执行权，使程序可以继续处理其他任务。
+
+**大白话：** 它类似前端 `await fetch()` 或 Koa 的异步中间件，等待外部结果时不占着执行通道干等。
+
+**举例：** `await client.chat.completions.create(...)` 等待模型服务响应。
+
+**项目用途：** Provider 调用属于网络 I/O，异步方式有利于 FastAPI 后续并发处理多个 Chat 请求。
+
+## 51. SecretStr（保密字符串）
+
+**专业解释：** `SecretStr` 是 Pydantic 的敏感值类型，默认隐藏其字符串表示，降低日志意外泄漏风险。
+
+**大白话：** 它像密码输入框的圆点遮罩，但仍需另外设置必填和长度校验。
+
+**举例：** `ProviderConfig` 使用 `SecretStr` 保存 API Key，并使用 `min_length=1` 拒绝空值。
+
+**项目用途：** 避免 Provider API Key 在配置对象的日志和调试输出中直接显示。
+
+## 52. Mock（模拟对象）
+
+**专业解释：** Mock 是测试中替代真实外部依赖的可控对象，用于观察调用参数并构造确定的返回结果。
+
+**大白话：** 它像前端单测中替换 Axios；验证调用逻辑，但不会真的请求服务器。
+
+**举例：** `FakeOpenAIClient` 记录模型、消息和 Temperature，并返回测试专用文本。
+
+**项目用途：** 在不使用真实 API Key、不消耗额度的情况下测试 Provider Adapter。
