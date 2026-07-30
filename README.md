@@ -4,7 +4,7 @@ Jack AI Studio 是一个面向开发者的 AI Workspace，也是一个 90 天 AI
 
 ## 当前状态
 
-Sprint 1 已完成，目前已建立最小 pnpm workspace、Next.js Web 应用骨架、带 Pydantic 运行时数据校验的 Python API、Next.js 到 FastAPI 的 Health 联通，以及可重复执行的基础质量门禁。当前 API 仅提供 `GET /health`，尚未接入模型或业务数据。
+Sprint 1 已完成，Sprint 2 AI Chat 已开始。目前已建立基础框架、前后端 Health 联通、统一质量门禁，以及 AI Chat 的 Message、Role 与 ChatRequest 数据契约。当前 API 仅提供 `GET /health`，尚未接入模型或 Chat Endpoint。
 
 ## 目录
 

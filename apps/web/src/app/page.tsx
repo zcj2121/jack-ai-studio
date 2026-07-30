@@ -56,7 +56,7 @@ export default async function Home() {
                   : "bg-amber-300"
               }`}
             />
-            DAY 10 · {apiHealth.state.toUpperCase()}
+            DAY 11 · {apiHealth.state.toUpperCase()}
           </div>
         </header>
 
@@ -97,7 +97,7 @@ export default async function Home() {
 
             <div className="mb-4 flex items-center justify-between font-mono text-[10px] tracking-[0.18em] text-white/38">
               <span>MODULE ROADMAP</span>
-              <span>10 / 90</span>
+              <span>11 / 90</span>
             </div>
 
             <div className="grid gap-px bg-white/10">
@@ -118,7 +118,7 @@ export default async function Home() {
 
         <footer className="grid gap-3 border-t border-white/15 pt-5 font-mono text-[10px] tracking-[0.16em] text-white/35 sm:grid-cols-3">
           <span>NEXT.JS / REACT / TYPESCRIPT</span>
-          <span className="sm:text-center">SPRINT 01 · FOUNDATION</span>
+          <span className="sm:text-center">SPRINT 02 · AI CHAT</span>
           <span className="sm:text-right">90 DAY BUILD LOG → V1.0</span>
         </footer>
       </div>
