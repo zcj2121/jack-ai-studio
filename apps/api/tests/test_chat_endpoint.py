@@ -1,13 +1,17 @@
 """AI Chat Endpoint 的 HTTP 契约测试。"""
 
 import os
+from collections.abc import AsyncIterator
 from unittest import TestCase
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.providers.openai_compatible import ProviderResponseError
+from app.providers.openai_compatible import (
+    ProviderError,
+    ProviderResponseError,
+)
 from app.routes.chat import get_chat_provider
 from app.schemas.chat import ChatMessage, ChatRequest, MessageRole
 
@@ -18,6 +22,8 @@ class FakeChatProvider:
     def __init__(self) -> None:
         self.request: ChatRequest | None = None
         self.error: ProviderResponseError | None = None
+        self.stream_chunks = ["第一段", "第二段"]
+        self.stream_error: ProviderError | None = None
 
     async def generate(self, request: ChatRequest) -> ChatMessage:
         self.request = request
@@ -29,6 +35,18 @@ class FakeChatProvider:
             role=MessageRole.ASSISTANT,
             content="这是 Fake Provider 返回的测试回答。",
         )
+
+    async def stream(
+        self,
+        request: ChatRequest,
+    ) -> AsyncIterator[str]:
+        self.request = request
+
+        if self.stream_error is not None:
+            raise self.stream_error
+
+        for chunk in self.stream_chunks:
+            yield chunk
 
 
 class ChatEndpointTest(TestCase):
@@ -105,9 +123,8 @@ class ChatEndpointTest(TestCase):
         )
 
     def test_documents_chat_response_contract(self) -> None:
-        operation = self.client.get("/openapi.json").json()["paths"][
-            "/chat"
-        ]["post"]
+        paths = self.client.get("/openapi.json").json()["paths"]
+        operation = paths["/chat"]["post"]
 
         self.assertEqual(
             operation["requestBody"]["content"]["application/json"][
@@ -124,6 +141,70 @@ class ChatEndpointTest(TestCase):
         self.assertIn("422", operation["responses"])
         self.assertIn("502", operation["responses"])
         self.assertIn("503", operation["responses"])
+        self.assertIn("/chat/stream", paths)
+        self.assertIn(
+            "text/event-stream",
+            paths["/chat/stream"]["post"]["responses"]["200"][
+                "content"
+            ],
+        )
+
+    def test_streams_delta_and_done_events(self) -> None:
+        response = self.client.post(
+            "/chat/stream",
+            json={
+                "model": "demo-model",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "请流式回答",
+                    }
+                ],
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(
+            response.headers["content-type"].startswith(
+                "text/event-stream"
+            )
+        )
+        self.assertEqual(
+            response.text,
+            (
+                'event: delta\ndata: {"content": "第一段"}\n\n'
+                'event: delta\ndata: {"content": "第二段"}\n\n'
+                "event: done\ndata: {}\n\n"
+            ),
+        )
+
+    def test_streams_safe_error_event_after_response_starts(self) -> None:
+        self.provider.stream_error = ProviderResponseError(
+            "empty stream"
+        )
+
+        response = self.client.post(
+            "/chat/stream",
+            json={
+                "model": "demo-model",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "你好",
+                    }
+                ],
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.text,
+            (
+                "event: error\n"
+                'data: {"message": "AI Provider streaming failed"}'
+                "\n\n"
+            ),
+        )
 
 
 class ChatEndpointConfigurationTest(TestCase):

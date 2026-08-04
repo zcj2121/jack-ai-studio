@@ -5,7 +5,7 @@ import { type FormEvent, useRef, useState } from "react";
 import {
   ChatApiError,
   type ChatMessage,
-  createChatCompletion,
+  streamChatCompletion,
 } from "@/lib/chat-api";
 
 const MAX_PROMPT_LENGTH = 2_000;
@@ -21,6 +21,9 @@ export function ChatWorkspace() {
   const [messages, setMessages] = useState<WorkspaceMessage[]>([]);
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [streamingMessageId, setStreamingMessageId] = useState<number | null>(
+    null,
+  );
 
   const normalizedModel = model.trim();
   const normalizedPrompt = prompt.trim();
@@ -57,24 +60,49 @@ export function ChatWorkspace() {
         content: userMessage.content,
       },
     ];
+    const assistantMessage = createWorkspaceMessage({
+      role: "assistant",
+      content: "",
+    });
 
-    setMessages((currentMessages) => [...currentMessages, userMessage]);
+    setMessages((currentMessages) => [
+      ...currentMessages,
+      userMessage,
+      assistantMessage,
+    ]);
     setPrompt("");
     setErrorMessage("");
     setIsSubmitting(true);
+    setStreamingMessageId(assistantMessage.id);
 
     try {
-      const assistantMessage = await createChatCompletion({
-        model: normalizedModel,
-        messages: requestMessages,
-        temperature: 0.7,
-      });
-
-      setMessages((currentMessages) => [
-        ...currentMessages,
-        createWorkspaceMessage(assistantMessage),
-      ]);
+      await streamChatCompletion(
+        {
+          model: normalizedModel,
+          messages: requestMessages,
+          temperature: 0.7,
+        },
+        (content) => {
+          setMessages((currentMessages) =>
+            currentMessages.map((message) =>
+              message.id === assistantMessage.id
+                ? {
+                    ...message,
+                    content: message.content + content,
+                  }
+                : message,
+            ),
+          );
+        },
+      );
     } catch (error) {
+      setMessages((currentMessages) =>
+        currentMessages.filter(
+          (message) =>
+            message.id !== assistantMessage.id ||
+            message.content.length > 0,
+        ),
+      );
       setErrorMessage(
         error instanceof ChatApiError
           ? error.message
@@ -82,6 +110,7 @@ export function ChatWorkspace() {
       );
     } finally {
       setIsSubmitting(false);
+      setStreamingMessageId(null);
     }
   }
 
@@ -93,10 +122,10 @@ export function ChatWorkspace() {
   return (
     <div className="relative flex min-h-[560px] flex-col border border-white/15 bg-white/[0.025]">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-5 py-4 font-mono text-[10px] tracking-[0.16em] text-white/38">
-        <span>POST /CHAT · NON-STREAMING</span>
+        <span>POST /CHAT/STREAM · SSE</span>
         <span className="flex items-center gap-2 text-[var(--signal)]">
           <span className="size-1.5 rounded-full bg-[var(--signal)]" />
-          ENDPOINT READY
+          STREAM READY
         </span>
       </div>
 
@@ -107,17 +136,17 @@ export function ChatWorkspace() {
         {messages.length === 0 ? (
           <div className="my-auto max-w-2xl py-10">
             <p className="font-mono text-xs tracking-[0.2em] text-[var(--signal)]">
-              REQUEST / RESPONSE
+              STREAM / RESPONSE
             </p>
             <h1 className="mt-5 text-[clamp(2.7rem,6vw,6rem)] font-semibold leading-[0.88] tracking-[-0.065em]">
-              The endpoint
+              Watch the answer
               <span className="block font-mono text-[0.62em] font-normal tracking-[-0.04em] text-white/30">
-                is listening.
+                arrive in motion.
               </span>
             </h1>
             <p className="mt-7 max-w-xl text-sm leading-7 text-white/50 sm:text-base">
-              输入 Provider 支持的 Model ID 和 Prompt。浏览器只调用同源
-              Next.js Route Handler，API Key 始终留在 FastAPI 服务端。
+              输入 Provider 支持的 Model ID 和 Prompt。Assistant Message
+              会随着 SSE Delta 到达逐段增长，API Key 始终留在 FastAPI 服务端。
             </p>
           </div>
         ) : (
@@ -135,6 +164,12 @@ export function ChatWorkspace() {
               </p>
               <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-white/70 sm:text-base">
                 {message.content}
+                {message.id === streamingMessageId ? (
+                  <span
+                    aria-label="正在接收流式回答"
+                    className="ml-1 inline-block h-4 w-1.5 animate-pulse bg-[var(--signal)] align-middle"
+                  />
+                ) : null}
               </p>
             </article>
           ))
@@ -143,7 +178,7 @@ export function ChatWorkspace() {
         {isSubmitting ? (
           <div className="flex items-center gap-3 font-mono text-[10px] tracking-[0.16em] text-white/40">
             <span className="size-2 animate-pulse rounded-full bg-[var(--signal)]" />
-            WAITING FOR PROVIDER
+            RECEIVING SSE DELTA
           </div>
         ) : null}
 
@@ -194,7 +229,7 @@ export function ChatWorkspace() {
               disabled={isSubmitting}
               maxLength={MAX_PROMPT_LENGTH}
               rows={3}
-              placeholder="输入一条消息，开始验证完整 Chat 请求链路。"
+              placeholder="输入一条消息，观察 Assistant 回答逐段出现。"
               className="mt-2 w-full resize-y border border-white/15 bg-black/20 p-3 text-sm leading-6 text-white outline-none transition-colors placeholder:text-white/20 focus:border-[var(--signal)] disabled:opacity-40"
             />
           </div>
@@ -219,7 +254,7 @@ export function ChatWorkspace() {
               disabled={!canSubmit}
               className="border border-[var(--signal)] bg-[var(--signal)] px-5 py-2 font-mono text-[10px] font-bold tracking-[0.16em] text-[var(--ink)] transition-opacity hover:opacity-85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--signal)] disabled:cursor-not-allowed disabled:opacity-30"
             >
-              {isSubmitting ? "发送中" : "发送消息"}
+              {isSubmitting ? "生成中" : "流式发送"}
             </button>
           </div>
         </div>

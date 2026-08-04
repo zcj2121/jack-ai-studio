@@ -1,9 +1,9 @@
 """OpenAI-compatible Provider 的最小异步适配器。"""
 
 import os
-from collections.abc import Mapping
+from collections.abc import AsyncIterator, Mapping
 
-from openai import AsyncOpenAI
+from openai import APIError, AsyncOpenAI
 from pydantic import BaseModel, Field, SecretStr
 
 from app.schemas.chat import ChatMessage, ChatRequest, MessageRole
@@ -19,7 +19,15 @@ class ProviderConfig(BaseModel):
     base_url: str | None = Field(default=None, min_length=1)
 
 
-class ProviderResponseError(RuntimeError):
+class ProviderError(RuntimeError):
+    """Provider 调用的统一业务异常。"""
+
+
+class ProviderRequestError(ProviderError):
+    """Provider 网络或 API 请求失败。"""
+
+
+class ProviderResponseError(ProviderError):
     """Provider 没有返回可展示的文本。"""
 
 
@@ -61,17 +69,23 @@ class OpenAICompatibleProvider:
     async def generate(self, request: ChatRequest) -> ChatMessage:
         """异步调用 Provider，并返回统一的 Assistant Message。"""
 
-        completion = await self._client.chat.completions.create(
-            model=request.model,
-            messages=[
-                {
-                    "role": message.role.value,
-                    "content": message.content,
-                }
-                for message in request.messages
-            ],
-            temperature=request.temperature,
-        )
+        try:
+            completion = await self._client.chat.completions.create(
+                model=request.model,
+                messages=[
+                    {
+                        "role": message.role.value,
+                        "content": message.content,
+                    }
+                    for message in request.messages
+                ],
+                temperature=request.temperature,
+            )
+        except APIError as error:
+            raise ProviderRequestError(
+                "Provider request failed"
+            ) from error
+
         content = completion.choices[0].message.content
 
         if content is None or not content.strip():
@@ -83,3 +97,41 @@ class OpenAICompatibleProvider:
             role=MessageRole.ASSISTANT,
             content=content,
         )
+
+    async def stream(self, request: ChatRequest) -> AsyncIterator[str]:
+        """异步读取 Provider Stream，并逐段返回有效文本。"""
+
+        received_content = False
+
+        try:
+            stream = await self._client.chat.completions.create(
+                model=request.model,
+                messages=[
+                    {
+                        "role": message.role.value,
+                        "content": message.content,
+                    }
+                    for message in request.messages
+                ],
+                temperature=request.temperature,
+                stream=True,
+            )
+
+            async for chunk in stream:
+                if not chunk.choices:
+                    continue
+
+                content = chunk.choices[0].delta.content
+
+                if content:
+                    received_content = True
+                    yield content
+        except APIError as error:
+            raise ProviderRequestError(
+                "Provider streaming request failed"
+            ) from error
+
+        if not received_content:
+            raise ProviderResponseError(
+                "Provider stream does not contain assistant text"
+            )

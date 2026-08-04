@@ -3,9 +3,9 @@ import Link from "next/link";
 import { ChatWorkspace } from "@/components/chat-workspace";
 
 const workspaceNotes = [
-  "Web 通过统一请求封装调用同源 /api/chat",
-  "Next.js Route Handler 转发到 FastAPI POST /chat",
-  "API Key 只保存在 FastAPI 服务端环境变量中",
+  "Web 通过统一请求封装读取 SSE Delta",
+  "Next.js Route Handler 原样透传 Response Body",
+  "FastAPI 把 Provider Chunk 转换为项目事件",
 ];
 
 export default function ChatPage() {
@@ -31,7 +31,7 @@ export default function ChatPage() {
 
           <div className="flex items-center gap-2 font-mono text-[10px] tracking-[0.18em] text-white/50">
             <span className="size-2 rounded-full bg-amber-300" />
-            CHAT ENDPOINT · DAY 13
+            SSE STREAMING · DAY 14
           </div>
         </header>
 
@@ -70,7 +70,7 @@ export default function ChatPage() {
         </section>
 
         <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-white/15 pt-5 font-mono text-[10px] tracking-[0.16em] text-white/35">
-          <span>WEB / ROUTE HANDLER / FASTAPI / PROVIDER</span>
+          <span>READABLE STREAM / SSE / PROVIDER CHUNK</span>
           <Link
             href="/"
             className="text-white/55 transition-colors hover:text-[var(--signal)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--signal)]"

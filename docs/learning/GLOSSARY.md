@@ -561,3 +561,53 @@
 **举例：** Chat 发送时禁用输入并显示等待提示，成功后展示 Assistant Message，失败后展示安全的中文错误。
 
 **项目用途：** 让 Chat Workspace 能清楚表达模型请求是否正在处理以及最终结果。
+
+## 57. Streaming（流式输出）
+
+**专业解释：** Streaming 允许服务端在完整结果生成前持续发送已经得到的数据分片，客户端可以边接收边处理。
+
+**大白话：** 它像做好一道菜就先上一道，不必等整桌全部完成。
+
+**举例：** 模型生成一段文本，Chat 页面就立即追加一段，而不是等待完整回答。
+
+**项目用途：** 降低 AI Chat 的首段等待时间，让用户看到回答正在生成。
+
+## 58. Chunk（数据分片）
+
+**专业解释：** Chunk 是流传输过程中一次读取到的数据片段，其边界不保证等于一个完整业务事件。
+
+**大白话：** 一次到货可能只有半张单据，也可能同时装了两张单据，需要先拼接再拆分。
+
+**举例：** `event: delta` 可能被两次 `reader.read()` 分开读到。
+
+**项目用途：** Web SSE 解析器使用 Buffer 组合跨 Chunk 的完整 Event。
+
+## 59. Server-Sent Events（SSE，服务器发送事件）
+
+**专业解释：** SSE 是使用 `text/event-stream` 响应类型，在单个 HTTP Response 中持续传输文本事件的格式。
+
+**大白话：** 它像服务端通过一条保持打开的 HTTP 水管，不断发送带标签的小纸条。
+
+**举例：** 当前流使用 `delta` 传文本、`done` 表示完成、`error` 表示流内失败。
+
+**项目用途：** 统一 FastAPI 到 Web 的 Streaming Chat 事件契约。
+
+## 60. ReadableStream（可读流）
+
+**专业解释：** ReadableStream 是 Web Streams API 的可读数据源，消费者可以使用 Reader 异步获取连续到达的字节分片。
+
+**大白话：** 它像不断异步询问“下一段到了吗”，直到数据源结束。
+
+**举例：** `response.body.getReader().read()` 逐段读取 FastAPI 透传回来的 SSE 文本。
+
+**项目用途：** Web Chat 读取并解析 SSE，收到 `delta` 后立即更新 Assistant Message。
+
+## 61. Async Generator（异步生成器）
+
+**专业解释：** Async Generator 使用 `async def` 与 `yield` 定义，并通过 `async for` 逐项异步消费。
+
+**大白话：** 它不是等全部完成后只返回一次，而是每拿到一段就交出去一段。
+
+**举例：** Provider 的 `stream()` 每收到一个有效文本 Chunk 就 `yield content`。
+
+**项目用途：** 串联 Provider AsyncStream、FastAPI StreamingResponse 和 SSE Event 生成过程。

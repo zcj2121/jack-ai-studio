@@ -45,12 +45,22 @@ class ProviderConfigTest(TestCase):
 class FakeCompletions:
     """记录调用参数并返回可控响应，不发起真实网络请求。"""
 
-    def __init__(self, content: str | None) -> None:
+    def __init__(
+        self,
+        content: str | None,
+        stream_contents: list[str | None] | None = None,
+    ) -> None:
         self.content = content
+        self.stream_contents = stream_contents
         self.request: dict[str, object] | None = None
 
     async def create(self, **request: object) -> object:
         self.request = request
+
+        if request.get("stream") is True:
+            return FakeChatCompletionStream(
+                self.stream_contents or []
+            )
 
         return SimpleNamespace(
             choices=[
@@ -61,11 +71,42 @@ class FakeCompletions:
         )
 
 
+class FakeChatCompletionStream:
+    """按顺序生成 Chat Completion Chunk 的异步迭代器。"""
+
+    def __init__(self, contents: list[str | None]) -> None:
+        self._contents = iter(contents)
+
+    def __aiter__(self) -> "FakeChatCompletionStream":
+        return self
+
+    async def __anext__(self) -> object:
+        try:
+            content = next(self._contents)
+        except StopIteration as error:
+            raise StopAsyncIteration from error
+
+        return SimpleNamespace(
+            choices=[
+                SimpleNamespace(
+                    delta=SimpleNamespace(content=content),
+                )
+            ]
+        )
+
+
 class FakeOpenAIClient:
     """提供 Provider 当前需要的最小 SDK 结构。"""
 
-    def __init__(self, content: str | None) -> None:
-        self.completions = FakeCompletions(content)
+    def __init__(
+        self,
+        content: str | None,
+        stream_contents: list[str | None] | None = None,
+    ) -> None:
+        self.completions = FakeCompletions(
+            content,
+            stream_contents,
+        )
         self.chat = SimpleNamespace(completions=self.completions)
 
 
@@ -137,3 +178,63 @@ class OpenAICompatibleProviderTest(IsolatedAsyncioTestCase):
 
         with self.assertRaises(ProviderResponseError):
             await provider.generate(request)
+
+    async def test_streams_assistant_text_chunks(self) -> None:
+        client = FakeOpenAIClient(
+            None,
+            ["第一段", None, "", "第二段"],
+        )
+        provider = OpenAICompatibleProvider(
+            ProviderConfig(api_key="test-secret"),
+            client=cast(AsyncOpenAI, client),
+        )
+        request = ChatRequest.model_validate(
+            {
+                "model": "demo-model",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "请流式回答",
+                    }
+                ],
+            }
+        )
+
+        chunks = [chunk async for chunk in provider.stream(request)]
+
+        self.assertEqual(chunks, ["第一段", "第二段"])
+        self.assertEqual(
+            client.completions.request,
+            {
+                "model": "demo-model",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "请流式回答",
+                    }
+                ],
+                "temperature": 0.7,
+                "stream": True,
+            },
+        )
+
+    async def test_rejects_stream_without_text(self) -> None:
+        client = FakeOpenAIClient(None, [None, ""])
+        provider = OpenAICompatibleProvider(
+            ProviderConfig(api_key="test-secret"),
+            client=cast(AsyncOpenAI, client),
+        )
+        request = ChatRequest.model_validate(
+            {
+                "model": "demo-model",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "你好",
+                    }
+                ],
+            }
+        )
+
+        with self.assertRaises(ProviderResponseError):
+            _ = [chunk async for chunk in provider.stream(request)]

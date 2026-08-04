@@ -2,7 +2,7 @@
 
 这里是 Jack AI Studio 的 Next.js Web 应用。
 
-Day 13 已启用 Chat Workspace 的 Model 与 Prompt 输入。浏览器通过统一 `createChatCompletion()` 请求同源 `POST /api/chat`，Next.js Route Handler 再使用服务端 `API_BASE_URL` 转发到 FastAPI `POST /chat`。
+Day 14 已把 Chat Workspace 升级为 SSE Streaming。浏览器通过统一 `streamChatCompletion()` 请求同源 `POST /api/chat/stream`，Next.js Route Handler 使用服务端 `API_BASE_URL` 转发到 FastAPI `POST /chat/stream`，并直接透传 Response Body。Web 每收到一个 `delta` Event 就追加 Assistant Message。
 
 Provider API Key 不进入 Web 环境变量或浏览器 JavaScript，只由 FastAPI 服务端读取。
 
@@ -30,9 +30,9 @@ API_BASE_URL=http://127.0.0.1:8000
 
 ## 当前边界
 
-- 非流式单轮 Chat 请求。
+- SSE 流式单轮 Chat 请求；保留 Day 13 非流式请求封装作为兼容路径。
 - 页面消息只保存在 React State，刷新后清空。
-- 当前没有会话持久化、多轮上下文或 Markdown 渲染。
+- 当前没有请求取消、会话持久化、多轮上下文或 Markdown 渲染。
 - 未配置 FastAPI Provider Key 时，页面显示 `503` 对应的中文提示。
 
 ## 验证
