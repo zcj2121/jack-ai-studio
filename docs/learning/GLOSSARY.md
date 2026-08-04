@@ -521,3 +521,43 @@
 **举例：** `FakeOpenAIClient` 记录模型、消息和 Temperature，并返回测试专用文本。
 
 **项目用途：** 在不使用真实 API Key、不消耗额度的情况下测试 Provider Adapter。
+
+## 53. Dependency Injection（依赖注入）
+
+**专业解释：** Dependency Injection 从外部向函数或对象提供依赖，使调用方依赖清晰契约，而不是固定的创建过程。
+
+**大白话：** 它类似 Vue 的 `provide/inject`；使用方说明需要什么，生产环境和测试环境可以提供不同实现。
+
+**举例：** `POST /chat` 正常使用 `OpenAICompatibleProvider`，测试时通过 FastAPI Dependency Override 换成 `FakeChatProvider`。
+
+**项目用途：** 隔离 Chat Route 与 Provider 创建过程，让 HTTP 链路能够在无真实 Key、无网络请求的条件下测试。
+
+## 54. HTTP Error Mapping（HTTP 错误映射）
+
+**专业解释：** HTTP Error Mapping 将应用内部异常转换为稳定的 HTTP Status Code 和对外错误响应。
+
+**大白话：** 它像 Koa 的统一错误处理，把复杂内部错误翻译成前端能判断、又不会泄露内部细节的结果。
+
+**举例：** `ChatRequest` 校验失败返回 `422`，Provider 无效响应返回 `502`，Provider 未配置返回 `503`。
+
+**项目用途：** 为 Chat 客户端建立可预测的失败契约，并保护服务端配置和异常堆栈。
+
+## 55. Backend for Frontend（BFF，服务于前端的后端层）
+
+**专业解释：** BFF 是为特定前端提供的服务端接口层，用于适配前端访问方式、聚合请求或保护运行时配置，但不应复制核心业务逻辑。
+
+**大白话：** 它像前端自己的服务台；浏览器只找同一个站点，服务台再联系真正处理业务的后端。
+
+**举例：** 浏览器请求 Next.js `/api/chat`，Route Handler 使用服务端 `API_BASE_URL` 转发到 FastAPI `/chat`。
+
+**项目用途：** 避免浏览器硬编码 FastAPI 地址和处理跨域，同时保证 Provider Key 只存在于 FastAPI 服务端。
+
+## 56. Request State（请求状态）
+
+**专业解释：** Request State 描述异步请求的 Idle、Loading、Success 和 Error 阶段，并驱动表单可用性、进度与结果展示。
+
+**大白话：** 它就是用户点击发送后看到的“等待中、成功了、失败了”，不能让界面对请求状态毫无反馈。
+
+**举例：** Chat 发送时禁用输入并显示等待提示，成功后展示 Assistant Message，失败后展示安全的中文错误。
+
+**项目用途：** 让 Chat Workspace 能清楚表达模型请求是否正在处理以及最终结果。

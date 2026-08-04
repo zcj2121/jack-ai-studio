@@ -20,7 +20,7 @@ class HealthEndpointTest(IsolatedAsyncioTestCase):
         health_routes = [
             route
             for route in app.routes
-            if route.path == "/health"
+            if getattr(route, "path", None) == "/health"
         ]
 
         self.assertEqual(len(health_routes), 1)

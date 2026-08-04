@@ -4,7 +4,7 @@ Jack AI Studio 是一个面向开发者的 AI Workspace，也是一个 90 天 AI
 
 ## 当前状态
 
-Sprint 1 已完成，Sprint 2 AI Chat 正在推进。目前已建立基础框架、前后端 Health 联通、统一质量门禁、AI Chat 消息契约，以及 OpenAI-compatible Provider 的服务端配置与异步适配边界。当前 API 仍仅提供 `GET /health`，尚未开放 Chat Endpoint 或启用前端输入。
+Sprint 1 已完成，Sprint 2 AI Chat 正在推进。目前已建立基础框架、前后端 Health 联通、统一质量门禁、AI Chat 消息契约、OpenAI-compatible Provider Adapter，以及 Web → Next.js Route Handler → FastAPI `POST /chat` 的非流式请求链路。Web 输入已启用；未配置 Provider Key 时会展示安全错误，不会自动调用真实模型。
 
 ## 目录
 
@@ -42,6 +42,7 @@ pnpm dev:web
 ```text
 Web：http://127.0.0.1:3000
 API Health：http://127.0.0.1:8000/health
+API Chat（POST）：http://127.0.0.1:8000/chat
 API Docs：http://127.0.0.1:8000/docs
 ```
 

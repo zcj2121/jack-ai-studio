@@ -1,36 +1,42 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Jack AI Studio Web
 
-## Getting Started
+这里是 Jack AI Studio 的 Next.js Web 应用。
 
-First, run the development server:
+Day 13 已启用 Chat Workspace 的 Model 与 Prompt 输入。浏览器通过统一 `createChatCompletion()` 请求同源 `POST /api/chat`，Next.js Route Handler 再使用服务端 `API_BASE_URL` 转发到 FastAPI `POST /chat`。
+
+Provider API Key 不进入 Web 环境变量或浏览器 JavaScript，只由 FastAPI 服务端读取。
+
+## 本地开发
+
+在仓库根目录分别启动 API 与 Web：
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm dev:api
+pnpm dev:web
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+访问：
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- 首页：`http://127.0.0.1:3000`
+- Chat Workspace：`http://127.0.0.1:3000/chat`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+复制 `.env.example` 为本地 `.env.local` 后，可以修改 Next.js 服务端访问 FastAPI 的地址：
 
-## Learn More
+```text
+API_BASE_URL=http://127.0.0.1:8000
+```
 
-To learn more about Next.js, take a look at the following resources:
+不要把 Provider API Key 写入 `NEXT_PUBLIC_` 变量。
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 当前边界
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- 非流式单轮 Chat 请求。
+- 页面消息只保存在 React State，刷新后清空。
+- 当前没有会话持久化、多轮上下文或 Markdown 渲染。
+- 未配置 FastAPI Provider Key 时，页面显示 `503` 对应的中文提示。
 
-## Deploy on Vercel
+## 验证
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+pnpm check:web
+```
