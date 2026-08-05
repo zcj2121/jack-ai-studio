@@ -5,7 +5,7 @@ import { ChatWorkspace } from "@/components/chat-workspace";
 const workspaceNotes = [
   "Web 通过统一请求封装读取 SSE Delta",
   "Next.js Route Handler 原样透传 Response Body",
-  "FastAPI 把 Provider Chunk 转换为项目事件",
+  "Assistant Message 使用安全 Markdown 渲染",
 ];
 
 export default function ChatPage() {
@@ -31,7 +31,7 @@ export default function ChatPage() {
 
           <div className="flex items-center gap-2 font-mono text-[10px] tracking-[0.18em] text-white/50">
             <span className="size-2 rounded-full bg-amber-300" />
-            SSE STREAMING · DAY 14
+            SSE STREAMING · DAY 15
           </div>
         </header>
 

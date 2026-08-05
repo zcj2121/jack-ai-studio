@@ -2,17 +2,25 @@
 
 import { type FormEvent, useRef, useState } from "react";
 
+import { MarkdownMessage } from "@/components/markdown-message";
 import {
   ChatApiError,
   type ChatMessage,
+  type ChatRequest,
   streamChatCompletion,
 } from "@/lib/chat-api";
+import { streamMarkdownDemo } from "@/lib/markdown-demo";
 
 const MAX_PROMPT_LENGTH = 2_000;
 
 interface WorkspaceMessage extends ChatMessage {
   id: number;
 }
+
+type StreamRunner = (
+  request: ChatRequest,
+  onDelta: (content: string) => void,
+) => Promise<void>;
 
 export function ChatWorkspace() {
   const nextMessageId = useRef(1);
@@ -43,23 +51,15 @@ export function ChatWorkspace() {
     return workspaceMessage;
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!canSubmit) {
-      return;
-    }
-
+  async function runStream(
+    displayPrompt: string,
+    request: ChatRequest,
+    streamRunner: StreamRunner,
+  ) {
     const userMessage = createWorkspaceMessage({
       role: "user",
-      content: normalizedPrompt,
+      content: displayPrompt,
     });
-    const requestMessages: ChatMessage[] = [
-      {
-        role: userMessage.role,
-        content: userMessage.content,
-      },
-    ];
     const assistantMessage = createWorkspaceMessage({
       role: "assistant",
       content: "",
@@ -76,12 +76,8 @@ export function ChatWorkspace() {
     setStreamingMessageId(assistantMessage.id);
 
     try {
-      await streamChatCompletion(
-        {
-          model: normalizedModel,
-          messages: requestMessages,
-          temperature: 0.7,
-        },
+      await streamRunner(
+        request,
         (content) => {
           setMessages((currentMessages) =>
             currentMessages.map((message) =>
@@ -112,6 +108,50 @@ export function ChatWorkspace() {
       setIsSubmitting(false);
       setStreamingMessageId(null);
     }
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!canSubmit) {
+      return;
+    }
+
+    await runStream(
+      normalizedPrompt,
+      {
+        model: normalizedModel,
+        messages: [
+          {
+            role: "user",
+            content: normalizedPrompt,
+          },
+        ],
+        temperature: 0.7,
+      },
+      streamChatCompletion,
+    );
+  }
+
+  async function handleMarkdownDemo() {
+    if (isSubmitting) {
+      return;
+    }
+
+    await runStream(
+      "请演示 Markdown 标题、列表和代码块。",
+      {
+        model: "local-markdown-demo",
+        messages: [
+          {
+            role: "user",
+            content: "请演示 Markdown 标题、列表和代码块。",
+          },
+        ],
+        temperature: 0.7,
+      },
+      streamMarkdownDemo,
+    );
   }
 
   function handleClearSession() {
@@ -162,15 +202,16 @@ export function ChatWorkspace() {
               <p className="font-mono text-[10px] tracking-[0.16em] text-white/35">
                 {message.role === "user" ? "YOU" : "ASSISTANT"}
               </p>
-              <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-white/70 sm:text-base">
-                {message.content}
-                {message.id === streamingMessageId ? (
-                  <span
-                    aria-label="正在接收流式回答"
-                    className="ml-1 inline-block h-4 w-1.5 animate-pulse bg-[var(--signal)] align-middle"
-                  />
-                ) : null}
-              </p>
+              {message.role === "assistant" ? (
+                <MarkdownMessage
+                  content={message.content}
+                  isStreaming={message.id === streamingMessageId}
+                />
+              ) : (
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-white/70 sm:text-base">
+                  {message.content}
+                </p>
+              )}
             </article>
           ))
         )}
@@ -237,10 +278,18 @@ export function ChatWorkspace() {
 
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
           <span className="font-mono text-[10px] tracking-[0.14em] text-white/30">
-            {prompt.length} / {MAX_PROMPT_LENGTH} · NO PERSISTED CONTEXT
+            {prompt.length} / {MAX_PROMPT_LENGTH} · NO API KEY IN DEMO
           </span>
 
           <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleMarkdownDemo}
+              disabled={isSubmitting}
+              className="border border-[var(--signal)]/60 px-4 py-2 font-mono text-[10px] tracking-[0.16em] text-[var(--signal)] transition-colors hover:border-[var(--signal)] hover:bg-[var(--signal)]/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--signal)] disabled:cursor-not-allowed disabled:opacity-30"
+            >
+              Markdown 演示
+            </button>
             <button
               type="button"
               onClick={handleClearSession}

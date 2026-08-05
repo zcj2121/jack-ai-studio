@@ -2,7 +2,9 @@
 
 这里是 Jack AI Studio 的 Next.js Web 应用。
 
-Day 14 已把 Chat Workspace 升级为 SSE Streaming。浏览器通过统一 `streamChatCompletion()` 请求同源 `POST /api/chat/stream`，Next.js Route Handler 使用服务端 `API_BASE_URL` 转发到 FastAPI `POST /chat/stream`，并直接透传 Response Body。Web 每收到一个 `delta` Event 就追加 Assistant Message。
+Day 15 已在 SSE Streaming Chat 上增加安全 Markdown 渲染。浏览器通过统一 `streamChatCompletion()` 请求同源 `POST /api/chat/stream`，Next.js Route Handler 使用服务端 `API_BASE_URL` 转发到 FastAPI `POST /chat/stream`，并直接透传 Response Body。Web 每收到一个 `delta` Event 就追加 Assistant Message，再由 `MarkdownMessage` 负责展示层排版。
+
+未配置 Provider API Key 时，可以点击 Chat 页面中的 `Markdown 演示`，使用本地分片观察标题、列表和代码块；该演示不会请求 API。
 
 Provider API Key 不进入 Web 环境变量或浏览器 JavaScript，只由 FastAPI 服务端读取。
 
