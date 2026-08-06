@@ -7,7 +7,7 @@
 - 未完成：Day 18 尚未开始
 - 当前项目状态：Web 已同时支持 Provider Catalog、Prompt Library、SSE Streaming 和安全 Markdown；Day 17 的模板只存在当前页面，不新增 API、不调用模型、不做持久化
 - 当前分支：`develop`
-- 最近一次 Commit：`bd382c8 feat(chat): add local prompt library for day 17`
+- 最近一次 Commit：`e457628 docs(learning): finalize day 17 acceptance`
 - 遇到的问题：Day 16 的移动端 Markdown 宽度问题已修复；Day 17 无阻塞问题，第 4 题已明确区分“未调用模型”和“未持久化”
 - 尚未理解：当前无 Day 17 遗留疑问
 - 下一步：开始 Day 18，不提前开发后续能力
