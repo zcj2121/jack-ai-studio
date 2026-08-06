@@ -11,31 +11,45 @@ from pydantic import ValidationError
 from app.providers.openai_compatible import (
     OpenAICompatibleProvider,
     ProviderError,
-    load_provider_config,
 )
-from app.schemas.chat import ChatMessage, ChatRequest
+from app.providers.registry import (
+    create_chat_provider,
+    list_chat_providers,
+)
+from app.schemas.chat import (
+    ChatMessage,
+    ChatProviderSummary,
+    ChatRequest,
+)
 
 router = APIRouter(tags=["chat"])
 
 
-def get_chat_provider() -> OpenAICompatibleProvider:
-    """使用服务端配置创建当前 Chat Provider。"""
+def get_chat_provider(request: ChatRequest) -> OpenAICompatibleProvider:
+    """根据 ChatRequest 选择并创建 Chat Provider。"""
 
     try:
-        config = load_provider_config()
+        return create_chat_provider(request.provider)
     except ValidationError as error:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="AI Provider is not configured",
         ) from error
 
-    return OpenAICompatibleProvider(config)
-
-
 ChatProviderDependency = Annotated[
     OpenAICompatibleProvider,
     Depends(get_chat_provider),
 ]
+
+
+@router.get(
+    "/providers",
+    response_model=list[ChatProviderSummary],
+)
+async def get_chat_providers() -> list[ChatProviderSummary]:
+    """返回 Provider 目录与是否完成服务端配置。"""
+
+    return list_chat_providers()
 
 
 @router.post(

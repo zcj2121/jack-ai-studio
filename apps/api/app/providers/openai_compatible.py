@@ -33,6 +33,10 @@ class ProviderResponseError(ProviderError):
 
 def load_provider_config(
     environ: Mapping[str, str] | None = None,
+    *,
+    api_key_env_name: str = API_KEY_ENV_NAME,
+    base_url_env_name: str = BASE_URL_ENV_NAME,
+    default_base_url: str | None = None,
 ) -> ProviderConfig:
     """从服务端环境变量读取并校验 Provider 配置。"""
 
@@ -40,8 +44,11 @@ def load_provider_config(
 
     return ProviderConfig.model_validate(
         {
-            "api_key": source.get(API_KEY_ENV_NAME, ""),
-            "base_url": source.get(BASE_URL_ENV_NAME) or None,
+            "api_key": source.get(api_key_env_name, "").strip(),
+            "base_url": (
+                source.get(base_url_env_name, "").strip()
+                or default_base_url
+            ),
         }
     )
 

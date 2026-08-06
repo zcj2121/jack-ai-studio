@@ -4,7 +4,7 @@ from unittest import TestCase
 
 from pydantic import ValidationError
 
-from app.schemas.chat import ChatRequest, MessageRole
+from app.schemas.chat import ChatProviderId, ChatRequest, MessageRole
 
 
 class ChatRequestTest(TestCase):
@@ -28,6 +28,10 @@ class ChatRequestTest(TestCase):
         )
 
         self.assertEqual(request.temperature, 0.7)
+        self.assertEqual(
+            request.provider,
+            ChatProviderId.OPENAI_COMPATIBLE,
+        )
         self.assertEqual(request.messages[0].role, MessageRole.SYSTEM)
         self.assertEqual(request.messages[1].role, MessageRole.USER)
 
@@ -80,5 +84,36 @@ class ChatRequestTest(TestCase):
                         }
                     ],
                     "temperature": 2.1,
+                }
+            )
+
+    def test_accepts_supported_provider(self) -> None:
+        request = ChatRequest.model_validate(
+            {
+                "provider": "openrouter",
+                "model": "demo-model",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "你好",
+                    }
+                ],
+            }
+        )
+
+        self.assertEqual(request.provider, ChatProviderId.OPENROUTER)
+
+    def test_rejects_unsupported_provider(self) -> None:
+        with self.assertRaises(ValidationError):
+            ChatRequest.model_validate(
+                {
+                    "provider": "unknown-provider",
+                    "model": "demo-model",
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": "你好",
+                        }
+                    ],
                 }
             )

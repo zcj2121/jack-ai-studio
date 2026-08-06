@@ -458,7 +458,7 @@
 
 **大白话：** 它像提交给模型服务的一张完整订单，不能只写一句话，还要说明使用哪个模型和携带哪些历史消息。
 
-**举例：** `ChatRequest` 当前包含 `model`、`messages` 和 `temperature`。
+**举例：** `ChatRequest` 当前包含 `provider`、`model`、`messages` 和 `temperature`。
 
 **项目用途：** 它会成为后续 Chat Endpoint 与 Provider 调用之间的数据契约。
 

@@ -1,4 +1,11 @@
 export type ChatMessageRole = "system" | "user" | "assistant";
+export type ChatProviderId = "openai-compatible" | "openrouter";
+
+export interface ChatProviderSummary {
+  id: ChatProviderId;
+  label: string;
+  configured: boolean;
+}
 
 export interface ChatMessage {
   role: ChatMessageRole;
@@ -6,6 +13,7 @@ export interface ChatMessage {
 }
 
 export interface ChatRequest {
+  provider: ChatProviderId;
   model: string;
   messages: ChatMessage[];
   temperature: number;
@@ -23,6 +31,25 @@ export class ChatApiError extends Error {
 
 interface ChatStreamDelta {
   content: string;
+}
+
+function isChatProviderId(value: unknown): value is ChatProviderId {
+  return value === "openai-compatible" || value === "openrouter";
+}
+
+function isChatProviderSummary(value: unknown): value is ChatProviderSummary {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const provider = value as Record<string, unknown>;
+
+  return (
+    isChatProviderId(provider.id) &&
+    typeof provider.label === "string" &&
+    provider.label.length > 0 &&
+    typeof provider.configured === "boolean"
+  );
 }
 
 function isChatMessage(value: unknown): value is ChatMessage {
@@ -55,6 +82,36 @@ function getErrorMessage(status: number): string {
   }
 
   return `Chat API 请求失败（HTTP ${status}）。`;
+}
+
+export async function getChatProviders(): Promise<ChatProviderSummary[]> {
+  let response: Response;
+
+  try {
+    response = await fetch("/api/providers", {
+      cache: "no-store",
+    });
+  } catch {
+    throw new ChatApiError(
+      "无法加载 Provider Catalog，请确认 Web 服务正常。",
+      0,
+    );
+  }
+
+  if (!response.ok) {
+    throw new ChatApiError(
+      `Provider Catalog 请求失败（HTTP ${response.status}）。`,
+      response.status,
+    );
+  }
+
+  const data: unknown = await response.json();
+
+  if (!Array.isArray(data) || !data.every(isChatProviderSummary)) {
+    throw new ChatApiError("Provider Catalog 响应结构无效。", 502);
+  }
+
+  return data;
 }
 
 async function postChatRequest(

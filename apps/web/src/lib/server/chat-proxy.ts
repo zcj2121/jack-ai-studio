@@ -3,9 +3,9 @@ const CHAT_TIMEOUT_MS = 60_000;
 
 type ChatEndpointPath = "/chat" | "/chat/stream";
 
-export async function forwardChatRequest(
+async function forwardApiRequest(
   request: Request,
-  endpointPath: ChatEndpointPath,
+  endpointPath: ChatEndpointPath | "/providers",
 ): Promise<Response> {
   const apiBaseUrl = (
     process.env.API_BASE_URL ?? DEFAULT_API_BASE_URL
@@ -13,11 +13,11 @@ export async function forwardChatRequest(
 
   try {
     const response = await fetch(`${apiBaseUrl}${endpointPath}`, {
-      method: "POST",
+      method: request.method,
       headers: {
         "Content-Type": "application/json",
       },
-      body: await request.text(),
+      body: request.method === "GET" ? undefined : await request.text(),
       cache: "no-store",
       signal: AbortSignal.any([
         request.signal,
@@ -52,4 +52,17 @@ export async function forwardChatRequest(
       },
     );
   }
+}
+
+export async function forwardChatRequest(
+  request: Request,
+  endpointPath: ChatEndpointPath,
+): Promise<Response> {
+  return forwardApiRequest(request, endpointPath);
+}
+
+export async function forwardProviderCatalogRequest(
+  request: Request,
+): Promise<Response> {
+  return forwardApiRequest(request, "/providers");
 }

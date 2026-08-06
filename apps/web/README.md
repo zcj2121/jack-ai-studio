@@ -2,9 +2,9 @@
 
 这里是 Jack AI Studio 的 Next.js Web 应用。
 
-Day 15 已在 SSE Streaming Chat 上增加安全 Markdown 渲染。浏览器通过统一 `streamChatCompletion()` 请求同源 `POST /api/chat/stream`，Next.js Route Handler 使用服务端 `API_BASE_URL` 转发到 FastAPI `POST /chat/stream`，并直接透传 Response Body。Web 每收到一个 `delta` Event 就追加 Assistant Message，再由 `MarkdownMessage` 负责展示层排版。
+Day 16 已增加最小多 Provider 闭环。Web 先通过统一 `getChatProviders()` 请求同源 `GET /api/providers`，取得 Provider 的安全元数据和配置状态；用户选择 Provider 后，`streamChatCompletion()` 会把 `provider`、`model` 和消息一起发送到 FastAPI。Provider Registry 根据稳定 ID 选择服务端环境变量，不会向浏览器返回 API Key 或 Base URL。
 
-未配置 Provider API Key 时，可以点击 Chat 页面中的 `Markdown 演示`，使用本地分片观察标题、列表和代码块；该演示不会请求 API。
+SSE 与 Markdown 链路保持不变。未配置 Provider API Key 时，可以点击 Chat 页面中的 `Markdown 演示`，使用本地分片观察标题、列表和代码块；该演示不会请求 API。
 
 Provider API Key 不进入 Web 环境变量或浏览器 JavaScript，只由 FastAPI 服务端读取。
 
@@ -33,9 +33,10 @@ API_BASE_URL=http://127.0.0.1:8000
 ## 当前边界
 
 - SSE 流式单轮 Chat 请求；保留 Day 13 非流式请求封装作为兼容路径。
+- Provider Catalog 当前包含 `openai-compatible` 与 `openrouter`，两者共享 OpenAI-compatible Adapter。
 - 页面消息只保存在 React State，刷新后清空。
-- 当前没有请求取消、会话持久化、多轮上下文或 Markdown 渲染。
-- 未配置 FastAPI Provider Key 时，页面显示 `503` 对应的中文提示。
+- 当前没有请求取消、会话持久化、多轮上下文或 Provider 管理后台。
+- 未配置所选 Provider 时，页面显示配置状态并禁用真实流式发送。
 
 ## 验证
 

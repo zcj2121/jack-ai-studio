@@ -10,7 +10,7 @@ export function MarkdownMessage({
   isStreaming = false,
 }: MarkdownMessageProps) {
   return (
-    <div className="prose prose-invert max-w-none text-sm leading-7 text-white/70 sm:text-base">
+    <div className="prose prose-invert min-w-0 max-w-none text-sm leading-7 text-white/70 sm:text-base">
       <ReactMarkdown
         components={{
           h1: ({ children }) => (
@@ -52,7 +52,7 @@ export function MarkdownMessage({
             </code>
           ),
           pre: ({ children }) => (
-            <pre className="my-4 overflow-x-auto border border-white/10 bg-black/35 p-0">
+            <pre className="my-4 max-w-full overflow-x-auto border border-white/10 bg-black/35 p-0">
               {children}
             </pre>
           ),

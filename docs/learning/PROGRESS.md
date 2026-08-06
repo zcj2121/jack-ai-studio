@@ -1,16 +1,16 @@
 # 当前学习进度
 
 - 当前 Sprint：Sprint 2 · AI Chat
-- 当前 Day：Day 15 · 已完成
-- 当前日期：2026-08-05
-- 已完成：Day 1～15；Day 15 已新增 `MarkdownMessage` 和无需 API Key 的 `Markdown 演示`，Assistant Message 支持标题、列表、引用、代码和链接的安全 Markdown 展示，真实 API 与 SSE 请求链路保持不变；Web Lint、TypeScript、Production Build、API 20 个回归测试、桌面/移动端浏览器验收和概念问答均已通过
-- 未完成：Day 16 尚未开始
-- 当前项目状态：Web 已通过同源 `/api/chat/stream` 连接 FastAPI 与 Provider Adapter，可逐段展示并排版单轮 Assistant 回答；本地 Markdown 演示无需 API Key；真实 Provider 仍未配置、未调用真实模型、未持久化会话
+- 当前 Day：Day 16 · 已完成
+- 当前日期：2026-08-06
+- 已完成：Day 1～16；Day 16 已实现 `openai-compatible` 与 `openrouter` 的 Provider Registry、`GET /providers` 安全目录、`ChatRequest.provider` 契约，以及 Web Provider Loading/Configured/Unconfigured/Error 状态；完整质量门禁、API 28 个测试、桌面端与 `390×844` 移动端浏览器验收、核心概念问答均已通过
+- 未完成：Day 17 尚未开始
+- 当前项目状态：Web 通过同源 `/api/providers` 获取 Provider 安全元数据，并通过 `/api/chat/stream` 携带稳定 Provider ID；两个 Provider 共用 OpenAI-compatible Adapter，API Key 与 Base URL 只在 FastAPI 服务端；本地 Markdown 演示无需 API Key，尚未调用真实模型或持久化会话
 - 当前分支：`develop`
-- 最近一次 Commit：`c5fa4d5 feat(chat): add SSE streaming for day 14`
-- 遇到的问题：SSE Event 与网络 Chunk 边界不一致，Web 已使用 Buffer 处理；流开始后无法修改 HTTP Status Code，已使用安全 `event: error` 表达流内失败；已有 Starlette `TestClient` deprecation warning 暂不阻塞
-- 尚未理解：当前无遗留疑问；需要继续巩固网络 Chunk 与 SSE Event 的边界、读取完整 Response 与透传 Stream 的区别，以及原始 HTML 解析与 XSS 风险的关系
-- 下一步：读取路线图并开始 Day 16
+- 最近一次 Commit：`e51bf50 feat(provider): add multi-provider selection for day 16`
+- 遇到的问题：移动端 Markdown 代码块一度通过 Grid/Flex 最小内容宽度把页面撑到 `483px`，已使用 `min-w-0` 修复并复验为 `390px`；已有 Starlette `TestClient` deprecation warning 暂不阻塞
+- 尚未理解：当前无 Day 16 遗留疑问；已补充 Registry/Adapter 分工、Catalog 快照与 API 双重校验、稳定 ID 和 Adapter 复用边界
+- 下一步：开始 Day 17；根据当前 Multi-provider Chat 基线确定当天范围，不提前开发
 
 ## 更新规则
 

@@ -85,6 +85,10 @@ class ChatEndpointTest(TestCase):
             },
         )
         self.assertIsNotNone(self.provider.request)
+        self.assertEqual(
+            self.provider.request.provider,
+            "openai-compatible",
+        )
         self.assertEqual(self.provider.request.model, "demo-model")
         self.assertEqual(self.provider.request.temperature, 0.3)
 
@@ -141,6 +145,7 @@ class ChatEndpointTest(TestCase):
         self.assertIn("422", operation["responses"])
         self.assertIn("502", operation["responses"])
         self.assertIn("503", operation["responses"])
+        self.assertIn("/providers", paths)
         self.assertIn("/chat/stream", paths)
         self.assertIn(
             "text/event-stream",
@@ -223,6 +228,57 @@ class ChatEndpointConfigurationTest(TestCase):
             response = self.client.post(
                 "/chat",
                 json={
+                    "model": "demo-model",
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": "你好",
+                        }
+                    ],
+                },
+            )
+
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(
+            response.json(),
+            {"detail": "AI Provider is not configured"},
+        )
+
+    def test_returns_safe_provider_catalog(self) -> None:
+        with patch.dict(
+            os.environ,
+            {
+                "AI_PROVIDER_API_KEY": "test-secret",
+                "AI_PROVIDER_OPENROUTER_API_KEY": "",
+            },
+            clear=True,
+        ):
+            response = self.client.get("/providers")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json(),
+            [
+                {
+                    "id": "openai-compatible",
+                    "label": "OpenAI-compatible",
+                    "configured": True,
+                },
+                {
+                    "id": "openrouter",
+                    "label": "OpenRouter",
+                    "configured": False,
+                },
+            ],
+        )
+        self.assertNotIn("test-secret", response.text)
+
+    def test_selects_openrouter_configuration(self) -> None:
+        with patch.dict(os.environ, {}, clear=True):
+            response = self.client.post(
+                "/chat",
+                json={
+                    "provider": "openrouter",
                     "model": "demo-model",
                     "messages": [
                         {

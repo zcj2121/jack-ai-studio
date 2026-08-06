@@ -3,8 +3,9 @@ import Link from "next/link";
 import { ChatWorkspace } from "@/components/chat-workspace";
 
 const workspaceNotes = [
+  "Provider Catalog 只返回安全元数据",
+  "Provider Registry 选择服务端配置",
   "Web 通过统一请求封装读取 SSE Delta",
-  "Next.js Route Handler 原样透传 Response Body",
   "Assistant Message 使用安全 Markdown 渲染",
 ];
 
@@ -31,7 +32,7 @@ export default function ChatPage() {
 
           <div className="flex items-center gap-2 font-mono text-[10px] tracking-[0.18em] text-white/50">
             <span className="size-2 rounded-full bg-amber-300" />
-            SSE STREAMING · DAY 15
+            MULTI PROVIDER · DAY 16
           </div>
         </header>
 
@@ -70,7 +71,7 @@ export default function ChatPage() {
         </section>
 
         <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-white/15 pt-5 font-mono text-[10px] tracking-[0.16em] text-white/35">
-          <span>READABLE STREAM / SSE / PROVIDER CHUNK</span>
+          <span>PROVIDER REGISTRY / CATALOG / SSE</span>
           <Link
             href="/"
             className="text-white/55 transition-colors hover:text-[var(--signal)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--signal)]"
