@@ -4,9 +4,15 @@ import os
 from collections.abc import AsyncIterator, Mapping
 
 from openai import APIError, AsyncOpenAI
-from pydantic import BaseModel, Field, SecretStr
+from pydantic import BaseModel, Field, SecretStr, ValidationError
 
-from app.schemas.chat import ChatMessage, ChatRequest, MessageRole
+from app.schemas.chat import (
+    ChatMessage,
+    ChatOutputMode,
+    ChatRequest,
+    MessageRole,
+    StructuredAnswer,
+)
 
 API_KEY_ENV_NAME = "AI_PROVIDER_API_KEY"
 BASE_URL_ENV_NAME = "AI_PROVIDER_BASE_URL"
@@ -29,6 +35,37 @@ class ProviderRequestError(ProviderError):
 
 class ProviderResponseError(ProviderError):
     """Provider 没有返回可展示的文本。"""
+
+
+def build_response_format(
+    output_mode: ChatOutputMode,
+) -> dict[str, object] | None:
+    """把项目输出模式转换为 OpenAI-compatible response_format。"""
+
+    if output_mode is ChatOutputMode.TEXT:
+        return None
+
+    return {
+        "type": "json_schema",
+        "json_schema": {
+            "name": "jack_ai_structured_answer",
+            "strict": True,
+            "schema": StructuredAnswer.model_json_schema(),
+        },
+    }
+
+
+def validate_structured_answer(content: str) -> str:
+    """校验 JSON 内容并返回规范化后的结构化回答。"""
+
+    try:
+        answer = StructuredAnswer.model_validate_json(content)
+    except ValidationError as error:
+        raise ProviderResponseError(
+            "Provider response does not match StructuredAnswer schema"
+        ) from error
+
+    return answer.model_dump_json()
 
 
 def load_provider_config(
@@ -73,20 +110,41 @@ class OpenAICompatibleProvider:
                 base_url=config.base_url,
             )
 
+    @staticmethod
+    def _build_completion_request(
+        request: ChatRequest,
+        *,
+        stream: bool = False,
+    ) -> dict[str, object]:
+        """构建 Provider 请求参数，并按需附加结构化输出约束。"""
+
+        payload: dict[str, object] = {
+            "model": request.model,
+            "messages": [
+                {
+                    "role": message.role.value,
+                    "content": message.content,
+                }
+                for message in request.messages
+            ],
+            "temperature": request.temperature,
+        }
+
+        response_format = build_response_format(request.output_mode)
+        if response_format is not None:
+            payload["response_format"] = response_format
+
+        if stream:
+            payload["stream"] = True
+
+        return payload
+
     async def generate(self, request: ChatRequest) -> ChatMessage:
         """异步调用 Provider，并返回统一的 Assistant Message。"""
 
         try:
             completion = await self._client.chat.completions.create(
-                model=request.model,
-                messages=[
-                    {
-                        "role": message.role.value,
-                        "content": message.content,
-                    }
-                    for message in request.messages
-                ],
-                temperature=request.temperature,
+                **self._build_completion_request(request),
             )
         except APIError as error:
             raise ProviderRequestError(
@@ -100,6 +158,9 @@ class OpenAICompatibleProvider:
                 "Provider response does not contain assistant text"
             )
 
+        if request.output_mode is ChatOutputMode.STRUCTURED_ANSWER:
+            content = validate_structured_answer(content)
+
         return ChatMessage(
             role=MessageRole.ASSISTANT,
             content=content,
@@ -109,19 +170,11 @@ class OpenAICompatibleProvider:
         """异步读取 Provider Stream，并逐段返回有效文本。"""
 
         received_content = False
+        received_chunks: list[str] = []
 
         try:
             stream = await self._client.chat.completions.create(
-                model=request.model,
-                messages=[
-                    {
-                        "role": message.role.value,
-                        "content": message.content,
-                    }
-                    for message in request.messages
-                ],
-                temperature=request.temperature,
-                stream=True,
+                **self._build_completion_request(request, stream=True),
             )
 
             async for chunk in stream:
@@ -132,6 +185,7 @@ class OpenAICompatibleProvider:
 
                 if content:
                     received_content = True
+                    received_chunks.append(content)
                     yield content
         except APIError as error:
             raise ProviderRequestError(
@@ -142,3 +196,6 @@ class OpenAICompatibleProvider:
             raise ProviderResponseError(
                 "Provider stream does not contain assistant text"
             )
+
+        if request.output_mode is ChatOutputMode.STRUCTURED_ANSWER:
+            validate_structured_answer("".join(received_chunks))

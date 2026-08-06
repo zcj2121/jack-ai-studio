@@ -651,3 +651,43 @@
 **举例：** `renderPromptTemplate(template, values)` 只返回渲染后的字符串。
 
 **项目用途：** 将 Prompt 渲染逻辑从 React State 和 Chat 请求中隔离，便于测试和复用。
+
+## 66. Structured Output（结构化输出）
+
+**专业解释：** 要求模型按预先定义的数据结构返回结果，而不是只返回没有固定字段的自由文本。
+
+**大白话：** 不只是让模型“回答问题”，还要求它按一张固定表格填写答案。
+
+**举例：** Day 18 的回答必须包含 `summary`、`key_points`、`example` 和 `project_role`。
+
+**项目用途：** `ChatRequest.output_mode=structured_answer` 让 Provider 请求 JSON Schema，API 再校验最终响应。
+
+## 67. JSON Schema（JSON 数据结构约束）
+
+**专业解释：** 描述 JSON 对象字段、类型、必填项和约束的机器可读规范。
+
+**大白话：** 像给接口数据写的一份字段说明书，而且程序可以据此自动检查。
+
+**举例：** `StructuredAnswer` 的 Schema 要求 `summary` 是非空字符串，`key_points` 是至少有一项的数组。
+
+**项目用途：** Provider 使用它向模型声明输出格式，避免只依赖 Prompt 中的文字要求。
+
+## 68. Response Validation（响应校验）
+
+**专业解释：** 在收到外部服务响应后，根据运行时 Schema 验证内容是否满足业务契约。
+
+**大白话：** 供应商说“我填好了”，后端还要逐项检查，不能只看 HTTP 200 就当作成功。
+
+**举例：** `StructuredAnswer.model_validate_json(content)` 会拒绝缺少字段或 JSON 无效的 Provider 响应。
+
+**项目用途：** 非流式和流式 Provider 结束后都必须通过结构校验；失败统一转为 `ProviderResponseError`。
+
+## 69. Output Contract（输出契约）
+
+**专业解释：** 调用方与模型服务共同遵守的输出格式约定，包含模式、字段和失败处理边界。
+
+**大白话：** 前端、后端和模型都按同一张交付验收单工作。
+
+**举例：** Web 发送 `structured_answer`，FastAPI 传递 JSON Schema，Provider 返回 JSON，API 验证四个字段后才认为成功。
+
+**项目用途：** 把自由文本 Chat 与可消费的结构化数据区分开，为后续 Agent、Workflow 和 Tool 调用提供可靠输入。

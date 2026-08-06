@@ -4,7 +4,12 @@ from unittest import TestCase
 
 from pydantic import ValidationError
 
-from app.schemas.chat import ChatProviderId, ChatRequest, MessageRole
+from app.schemas.chat import (
+    ChatOutputMode,
+    ChatProviderId,
+    ChatRequest,
+    MessageRole,
+)
 
 
 class ChatRequestTest(TestCase):
@@ -102,6 +107,55 @@ class ChatRequestTest(TestCase):
         )
 
         self.assertEqual(request.provider, ChatProviderId.OPENROUTER)
+
+    def test_defaults_to_text_output(self) -> None:
+        request = ChatRequest.model_validate(
+            {
+                "model": "demo-model",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "你好",
+                    }
+                ],
+            }
+        )
+
+        self.assertEqual(request.output_mode, ChatOutputMode.TEXT)
+
+    def test_accepts_structured_output_mode(self) -> None:
+        request = ChatRequest.model_validate(
+            {
+                "model": "demo-model",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "解释 Provider Registry",
+                    }
+                ],
+                "output_mode": "structured_answer",
+            }
+        )
+
+        self.assertEqual(
+            request.output_mode,
+            ChatOutputMode.STRUCTURED_ANSWER,
+        )
+
+    def test_rejects_unknown_output_mode(self) -> None:
+        with self.assertRaises(ValidationError):
+            ChatRequest.model_validate(
+                {
+                    "model": "demo-model",
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": "你好",
+                        }
+                    ],
+                    "output_mode": "xml",
+                }
+            )
 
     def test_rejects_unsupported_provider(self) -> None:
         with self.assertRaises(ValidationError):

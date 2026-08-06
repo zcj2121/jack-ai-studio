@@ -1,5 +1,6 @@
 export type ChatMessageRole = "system" | "user" | "assistant";
 export type ChatProviderId = "openai-compatible" | "openrouter";
+export type ChatOutputMode = "text" | "structured_answer";
 
 export interface ChatProviderSummary {
   id: ChatProviderId;
@@ -17,6 +18,7 @@ export interface ChatRequest {
   model: string;
   messages: ChatMessage[];
   temperature: number;
+  output_mode: ChatOutputMode;
 }
 
 export class ChatApiError extends Error {

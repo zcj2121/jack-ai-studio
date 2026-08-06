@@ -4,6 +4,8 @@
 
 Day 17 已增加本地 Prompt Library。Web 使用类型化的 Prompt Template Catalog，用户选择模板并填写变量后，一键把渲染后的 Prompt 应用到 Chat 输入框；模板数据和变量替换只存在当前页面，不新增 API，也不会把 Prompt 发送到模型直到用户点击流式发送。
 
+Day 18 增加 Chat 输出模式选择。`Text / Markdown` 保持现有回答展示；`Structured JSON` 会在 ChatRequest 中发送 `output_mode=structured_answer`，由 FastAPI 和 Provider 共同使用 `StructuredAnswer` Schema 校验响应。
+
 Day 16 的多 Provider、SSE 与 Markdown 链路保持不变。未配置 Provider API Key 时，可以点击 Chat 页面中的 `Markdown 演示`，使用本地分片观察标题、列表和代码块；该演示不会请求 API。
 
 Provider API Key 不进入 Web 环境变量或浏览器 JavaScript，只由 FastAPI 服务端读取。
@@ -33,6 +35,7 @@ API_BASE_URL=http://127.0.0.1:8000
 ## 当前边界
 
 - SSE 流式单轮 Chat 请求；保留 Day 13 非流式请求封装作为兼容路径。
+- Chat 输出模式支持 `text` 与 `structured_answer`；结构化回答以 JSON 文本展示，后端负责最终 Schema 校验。
 - Provider Catalog 当前包含 `openai-compatible` 与 `openrouter`，两者共享 OpenAI-compatible Adapter。
 - Prompt Library 当前包含 3 个本地模板，支持变量填充和应用到当前 Chat Prompt；暂不持久化。
 - 页面消息只保存在 React State，刷新后清空。

@@ -7,6 +7,7 @@ import { PromptLibrary } from "@/components/prompt-library";
 import {
   ChatApiError,
   type ChatMessage,
+  type ChatOutputMode,
   type ChatProviderId,
   type ChatProviderSummary,
   type ChatRequest,
@@ -19,6 +20,7 @@ const MAX_PROMPT_LENGTH = 2_000;
 
 interface WorkspaceMessage extends ChatMessage {
   id: number;
+  outputMode: ChatOutputMode;
 }
 
 type StreamRunner = (
@@ -35,6 +37,7 @@ export function ChatWorkspace() {
   const [providerCatalogError, setProviderCatalogError] = useState("");
   const [model, setModel] = useState("");
   const [prompt, setPrompt] = useState("");
+  const [outputMode, setOutputMode] = useState<ChatOutputMode>("text");
   const [messages, setMessages] = useState<WorkspaceMessage[]>([]);
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -102,10 +105,14 @@ export function ChatWorkspace() {
     };
   }, []);
 
-  function createWorkspaceMessage(message: ChatMessage): WorkspaceMessage {
+  function createWorkspaceMessage(
+    message: ChatMessage,
+    messageOutputMode: ChatOutputMode,
+  ): WorkspaceMessage {
     const workspaceMessage = {
       ...message,
       id: nextMessageId.current,
+      outputMode: messageOutputMode,
     };
 
     nextMessageId.current += 1;
@@ -118,14 +125,20 @@ export function ChatWorkspace() {
     request: ChatRequest,
     streamRunner: StreamRunner,
   ) {
-    const userMessage = createWorkspaceMessage({
-      role: "user",
-      content: displayPrompt,
-    });
-    const assistantMessage = createWorkspaceMessage({
-      role: "assistant",
-      content: "",
-    });
+    const userMessage = createWorkspaceMessage(
+      {
+        role: "user",
+        content: displayPrompt,
+      },
+      request.output_mode,
+    );
+    const assistantMessage = createWorkspaceMessage(
+      {
+        role: "assistant",
+        content: "",
+      },
+      request.output_mode,
+    );
 
     setMessages((currentMessages) => [
       ...currentMessages,
@@ -158,7 +171,8 @@ export function ChatWorkspace() {
         currentMessages.filter(
           (message) =>
             message.id !== assistantMessage.id ||
-            message.content.length > 0,
+            (request.output_mode === "text" &&
+              message.content.length > 0),
         ),
       );
       setErrorMessage(
@@ -191,6 +205,7 @@ export function ChatWorkspace() {
           },
         ],
         temperature: 0.7,
+        output_mode: outputMode,
       },
       streamChatCompletion,
     );
@@ -213,6 +228,7 @@ export function ChatWorkspace() {
           },
         ],
         temperature: 0.7,
+        output_mode: "text",
       },
       streamMarkdownDemo,
     );
@@ -280,10 +296,16 @@ export function ChatWorkspace() {
                 {message.role === "user" ? "YOU" : "ASSISTANT"}
               </p>
               {message.role === "assistant" ? (
-                <MarkdownMessage
-                  content={message.content}
-                  isStreaming={message.id === streamingMessageId}
-                />
+                message.outputMode === "structured_answer" ? (
+                  <pre className="mt-2 overflow-x-auto whitespace-pre-wrap text-xs leading-6 text-white/75">
+                    {message.content}
+                  </pre>
+                ) : (
+                  <MarkdownMessage
+                    content={message.content}
+                    isStreaming={message.id === streamingMessageId}
+                  />
+                )
               ) : (
                 <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-white/70 sm:text-base">
                   {message.content}
@@ -325,7 +347,33 @@ export function ChatWorkspace() {
         onSubmit={handleSubmit}
         className="border-t border-white/10 p-4 sm:p-5"
       >
-        <div className="grid gap-3 lg:grid-cols-[minmax(170px,0.26fr)_minmax(180px,0.3fr)_1fr]">
+        <div className="grid gap-3 lg:grid-cols-[minmax(150px,0.2fr)_minmax(170px,0.24fr)_minmax(170px,0.24fr)_1fr]">
+          <div>
+            <label
+              htmlFor="chat-output-mode"
+              className="font-mono text-[10px] tracking-[0.16em] text-white/45"
+            >
+              OUTPUT MODE
+            </label>
+            <select
+              id="chat-output-mode"
+              value={outputMode}
+              onChange={(event) =>
+                setOutputMode(event.target.value as ChatOutputMode)
+              }
+              disabled={isSubmitting}
+              className="mt-2 h-12 w-full border border-white/15 bg-[var(--ink)] px-3 font-mono text-xs text-white outline-none transition-colors focus:border-[var(--signal)] disabled:opacity-40"
+            >
+              <option value="text">Text / Markdown</option>
+              <option value="structured_answer">Structured JSON</option>
+            </select>
+            <p className="mt-2 font-mono text-[9px] tracking-[0.12em] text-white/35">
+              {outputMode === "structured_answer"
+                ? "PYDANTIC SCHEMA"
+                : "MARKDOWN TEXT"}
+            </p>
+          </div>
+
           <div>
             <label
               htmlFor="chat-provider"

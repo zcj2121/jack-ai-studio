@@ -20,11 +20,27 @@ class ChatProviderId(StrEnum):
     OPENROUTER = "openrouter"
 
 
+class ChatOutputMode(StrEnum):
+    """Chat 回答的输出模式。"""
+
+    TEXT = "text"
+    STRUCTURED_ANSWER = "structured_answer"
+
+
 class ChatMessage(BaseModel):
     """发送给模型的一条结构化消息。"""
 
     role: MessageRole
     content: str = Field(min_length=1)
+
+
+class StructuredAnswer(BaseModel):
+    """结构化回答必须满足的固定字段契约。"""
+
+    summary: str = Field(min_length=1)
+    key_points: list[str] = Field(min_length=1)
+    example: str = Field(min_length=1)
+    project_role: str = Field(min_length=1)
 
 
 class ChatRequest(BaseModel):
@@ -34,6 +50,7 @@ class ChatRequest(BaseModel):
     model: str = Field(min_length=1)
     messages: list[ChatMessage] = Field(min_length=1)
     temperature: float = Field(default=0.7, ge=0, le=2)
+    output_mode: ChatOutputMode = ChatOutputMode.TEXT
 
 
 class ChatProviderSummary(BaseModel):

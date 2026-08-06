@@ -1,5 +1,6 @@
 """OpenAI-compatible Provider 适配器测试。"""
 
+import json
 from types import SimpleNamespace
 from typing import cast
 from unittest import IsolatedAsyncioTestCase, TestCase
@@ -8,12 +9,13 @@ from openai import AsyncOpenAI
 from pydantic import ValidationError
 
 from app.providers.openai_compatible import (
+    build_response_format,
     OpenAICompatibleProvider,
     ProviderConfig,
     ProviderResponseError,
     load_provider_config,
 )
-from app.schemas.chat import ChatRequest, MessageRole
+from app.schemas.chat import ChatOutputMode, ChatRequest, MessageRole
 
 
 class ProviderConfigTest(TestCase):
@@ -179,6 +181,67 @@ class OpenAICompatibleProviderTest(IsolatedAsyncioTestCase):
         with self.assertRaises(ProviderResponseError):
             await provider.generate(request)
 
+    async def test_validates_structured_response_and_request_schema(self) -> None:
+        structured_content = json.dumps(
+            {
+                "summary": "Provider Registry 是集中选择表。",
+                "key_points": ["使用稳定 ID", "只在后端读取配置"],
+                "example": "openrouter -> OpenAICompatibleProvider",
+                "project_role": "让 Chat 页面不感知密钥细节。",
+            },
+            ensure_ascii=False,
+        )
+        client = FakeOpenAIClient(structured_content)
+        provider = OpenAICompatibleProvider(
+            ProviderConfig(api_key="test-secret"),
+            client=cast(AsyncOpenAI, client),
+        )
+        request = ChatRequest.model_validate(
+            {
+                "model": "demo-model",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "解释 Provider Registry",
+                    }
+                ],
+                "output_mode": "structured_answer",
+            }
+        )
+
+        message = await provider.generate(request)
+
+        self.assertEqual(
+            json.loads(message.content),
+            json.loads(structured_content),
+        )
+        self.assertEqual(
+            client.completions.request["response_format"],
+            build_response_format(ChatOutputMode.STRUCTURED_ANSWER),
+        )
+
+    async def test_rejects_invalid_structured_response(self) -> None:
+        client = FakeOpenAIClient('{"summary":"缺少其他字段"}')
+        provider = OpenAICompatibleProvider(
+            ProviderConfig(api_key="test-secret"),
+            client=cast(AsyncOpenAI, client),
+        )
+        request = ChatRequest.model_validate(
+            {
+                "model": "demo-model",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "你好",
+                    }
+                ],
+                "output_mode": "structured_answer",
+            }
+        )
+
+        with self.assertRaises(ProviderResponseError):
+            await provider.generate(request)
+
     async def test_streams_assistant_text_chunks(self) -> None:
         client = FakeOpenAIClient(
             None,
@@ -233,6 +296,66 @@ class OpenAICompatibleProviderTest(IsolatedAsyncioTestCase):
                         "content": "你好",
                     }
                 ],
+            }
+        )
+
+        with self.assertRaises(ProviderResponseError):
+            _ = [chunk async for chunk in provider.stream(request)]
+
+    async def test_validates_structured_stream_after_all_chunks(self) -> None:
+        client = FakeOpenAIClient(
+            None,
+            [
+                '{"summary":"结构化回答",',
+                '"key_points":["第一点"],',
+                '"example":"一个例子",',
+                '"project_role":"项目用途"}',
+            ],
+        )
+        provider = OpenAICompatibleProvider(
+            ProviderConfig(api_key="test-secret"),
+            client=cast(AsyncOpenAI, client),
+        )
+        request = ChatRequest.model_validate(
+            {
+                "model": "demo-model",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "请结构化回答",
+                    }
+                ],
+                "output_mode": "structured_answer",
+            }
+        )
+
+        chunks = [chunk async for chunk in provider.stream(request)]
+
+        self.assertEqual(
+            "".join(chunks),
+            '{"summary":"结构化回答","key_points":["第一点"],'
+            '"example":"一个例子","project_role":"项目用途"}',
+        )
+
+    async def test_rejects_invalid_structured_stream_after_chunks(self) -> None:
+        client = FakeOpenAIClient(
+            None,
+            ['{"summary":"缺少字段"}'],
+        )
+        provider = OpenAICompatibleProvider(
+            ProviderConfig(api_key="test-secret"),
+            client=cast(AsyncOpenAI, client),
+        )
+        request = ChatRequest.model_validate(
+            {
+                "model": "demo-model",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "请结构化回答",
+                    }
+                ],
+                "output_mode": "structured_answer",
             }
         )
 
