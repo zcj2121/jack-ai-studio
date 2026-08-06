@@ -611,3 +611,43 @@
 **举例：** Provider 的 `stream()` 每收到一个有效文本 Chunk 就 `yield content`。
 
 **项目用途：** 串联 Provider AsyncStream、FastAPI StreamingResponse 和 SSE Event 生成过程。
+
+## 62. Prompt Template（提示词模板）
+
+**专业解释：** 带有固定指令结构和可替换变量的 Prompt，渲染后形成一次具体请求的文本。
+
+**大白话：** 像一张可重复使用的表单，格式固定，主题等字段每次填写。
+
+**举例：** `请解释 {{topic}}` 中的 `{{topic}}` 是模板变量。
+
+**项目用途：** Day 17 用它组织概念讲解、方案对比和问题排查模板。
+
+## 63. Variable Interpolation（变量插值）
+
+**专业解释：** 将变量值填入模板占位符并生成完整文本的过程。
+
+**大白话：** 把表单字段填入文档空格。
+
+**举例：** `topic=Provider Registry` 会把 `{{topic}}` 替换为 `Provider Registry`。
+
+**项目用途：** `renderPromptTemplate()` 负责纯文本渲染，组件负责收集变量值。
+
+## 64. Prompt Catalog（提示词目录）
+
+**专业解释：** 可供选择的 Prompt 模板及其元数据集合，不等于数据库持久化。
+
+**大白话：** 像页面内置菜单，能选择菜品，但还没有保存成用户自己的菜单。
+
+**举例：** `PROMPT_TEMPLATES` 保存模板 ID、标题、说明、正文和变量。
+
+**项目用途：** Day 17 用本地 Catalog 验证模板复用流程，后续再接持久化。
+
+## 65. Pure Function（纯函数）
+
+**专业解释：** 对相同输入始终返回相同输出，并且不读取或修改外部状态的函数。
+
+**大白话：** 像计算器，输入相同结果就相同，不会偷偷改页面或请求网络。
+
+**举例：** `renderPromptTemplate(template, values)` 只返回渲染后的字符串。
+
+**项目用途：** 将 Prompt 渲染逻辑从 React State 和 Chat 请求中隔离，便于测试和复用。

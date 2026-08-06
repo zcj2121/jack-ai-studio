@@ -1,16 +1,16 @@
 # 当前学习进度
 
 - 当前 Sprint：Sprint 2 · AI Chat
-- 当前 Day：Day 16 · 已完成
+- 当前 Day：Day 17 · 已完成
 - 当前日期：2026-08-06
-- 已完成：Day 1～16；Day 16 已实现 `openai-compatible` 与 `openrouter` 的 Provider Registry、`GET /providers` 安全目录、`ChatRequest.provider` 契约，以及 Web Provider Loading/Configured/Unconfigured/Error 状态；完整质量门禁、API 28 个测试、桌面端与 `390×844` 移动端浏览器验收、核心概念问答均已通过
-- 未完成：Day 17 尚未开始
-- 当前项目状态：Web 通过同源 `/api/providers` 获取 Provider 安全元数据，并通过 `/api/chat/stream` 携带稳定 Provider ID；两个 Provider 共用 OpenAI-compatible Adapter，API Key 与 Base URL 只在 FastAPI 服务端；本地 Markdown 演示无需 API Key，尚未调用真实模型或持久化会话
+- 已完成：Day 1～17；Sprint 1 阶段总结已补充至 `docs/learning/sprint-01-summary.md`；Day 17 已实现本地 Prompt Template Catalog、变量替换和应用到 Chat Prompt 的 Web 交互，并完成核心概念问答；完整质量门禁、API 28 个测试、桌面端与 `390×844` 移动端浏览器验收均已通过
+- 未完成：Day 18 尚未开始
+- 当前项目状态：Web 已同时支持 Provider Catalog、Prompt Library、SSE Streaming 和安全 Markdown；Day 17 的模板只存在当前页面，不新增 API、不调用模型、不做持久化
 - 当前分支：`develop`
-- 最近一次 Commit：`e51bf50 feat(provider): add multi-provider selection for day 16`
-- 遇到的问题：移动端 Markdown 代码块一度通过 Grid/Flex 最小内容宽度把页面撑到 `483px`，已使用 `min-w-0` 修复并复验为 `390px`；已有 Starlette `TestClient` deprecation warning 暂不阻塞
-- 尚未理解：当前无 Day 16 遗留疑问；已补充 Registry/Adapter 分工、Catalog 快照与 API 双重校验、稳定 ID 和 Adapter 复用边界
-- 下一步：开始 Day 17；根据当前 Multi-provider Chat 基线确定当天范围，不提前开发
+- 最近一次 Commit：`45be869 feat(provider): add multi-provider selection for day 16`
+- 遇到的问题：Day 16 的移动端 Markdown 宽度问题已修复；Day 17 无阻塞问题，第 4 题已明确区分“未调用模型”和“未持久化”
+- 尚未理解：当前无 Day 17 遗留疑问
+- 下一步：完成 Day 17 本地 Commit 后开始 Day 18，不提前开发后续能力
 
 ## 更新规则
 

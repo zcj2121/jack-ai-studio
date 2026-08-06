@@ -3,6 +3,7 @@
 import { type FormEvent, useEffect, useRef, useState } from "react";
 
 import { MarkdownMessage } from "@/components/markdown-message";
+import { PromptLibrary } from "@/components/prompt-library";
 import {
   ChatApiError,
   type ChatMessage,
@@ -317,6 +318,8 @@ export function ChatWorkspace() {
           </div>
         ) : null}
       </div>
+
+      <PromptLibrary disabled={isSubmitting} onApply={setPrompt} />
 
       <form
         onSubmit={handleSubmit}
