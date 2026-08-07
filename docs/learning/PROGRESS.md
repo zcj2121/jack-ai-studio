@@ -1,16 +1,16 @@
 # 当前学习进度
 
 - 当前 Sprint：Sprint 2 · AI Chat
-- 当前 Day：Day 18 · 已完成
-- 当前日期：2026-08-06
-- 已完成：Day 1～18；Sprint 1 阶段总结已补充至 `docs/learning/sprint-01-summary.md`；Day 18 已完成 `text` / `structured_answer` 输出契约、Pydantic 运行时校验、非流式/流式错误边界、Web 结构化展示、完整质量门禁、API 35 个测试、桌面端与 `390×844` 移动端浏览器验收及五道核心概念问答
-- 未完成：Day 19 尚未开始
-- 当前项目状态：Web 已同时支持 Provider Catalog、Prompt Library、SSE Streaming、安全 Markdown 和 Structured JSON 展示；结构化响应已通过 Fake Provider 完成跨层契约验证，未调用真实模型，不新增数据库或会话持久化
+- 当前 Day：Day 19 · 已完成
+- 当前日期：2026-08-07
+- 已完成：Day 1～19；Sprint 1 阶段总结已补充至 `docs/learning/sprint-01-summary.md`；Day 19 已完成服务端 Tool Definition、Raw/Validated Tool Call、allowlist、Pydantic 严格参数校验、完整质量门禁、API 44 个测试、Python 正常/异常运行演示、桌面端与 `390×844` 移动端页面回归及五道核心概念问答
+- 未完成：Day 20 尚未开始
+- 当前项目状态：Web 继续支持 Provider Catalog、Prompt Library、SSE Streaming、安全 Markdown 和 Structured JSON 展示；Day 19 仅在 API 内新增 `add_numbers` Tool Definition 与参数校验，尚未接入 Provider、Route 或 Web，不执行工具
 - 当前分支：`develop`
-- 最近一次 Commit：`5f6287a docs(process): formalize sprint summaries and daily terminology`
-- 遇到的问题：Day 18 无阻塞问题；保留已有 Starlette `TestClient` deprecation warning，不影响 35 个测试通过
-- 尚未理解：暂无；后续需要在真实 Provider 接入阶段继续观察不同供应商对 JSON Schema 的兼容差异
-- 下一步：创建 Day 18 本地 Commit；之后开始 Day 19 前重新读取路线图并确认当天范围
+- 最近一次 Commit：`feat(tools): add tool calling contract for day 19`（当前 HEAD）
+- 遇到的问题：已修正 Day 18 Commit 状态滞后；首次聚焦测试使用了错误 import 入口，改用项目既有 unittest discovery 后测试通过，源码无需修改；保留已有 Starlette `TestClient` deprecation warning
+- 尚未理解：暂无；Day 19 已能区分 Tool Call 与工具执行、服务端能力所有权、Raw/Validated 数据，以及 allowlist 与 Pydantic 的不同职责
+- 下一步：开始 Day 20 前重新读取路线图，确认 Provider Tool Call 接入的最小范围
 
 ## 更新规则
 

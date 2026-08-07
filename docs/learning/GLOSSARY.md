@@ -691,3 +691,53 @@
 **举例：** Web 发送 `structured_answer`，FastAPI 传递 JSON Schema，Provider 返回 JSON，API 验证四个字段后才认为成功。
 
 **项目用途：** 把自由文本 Chat 与可消费的结构化数据区分开，为后续 Agent、Workflow 和 Tool 调用提供可靠输入。
+
+## 70. Tool Calling（工具调用）
+
+**专业解释：** 模型根据应用提供的工具定义，返回工具名、调用 ID 和参数的结构化请求；应用负责校验、授权和执行。
+
+**大白话：** 模型只填写工具申请单，不会因为写了函数名就自动执行代码。
+
+**举例：** 模型可以请求 `add_numbers` 并给出 `a=12`、`b=30`，API 必须先校验请求。
+
+**项目用途：** Day 19 建立工具请求的数据边界，为后续 Provider 接入与安全执行做准备。
+
+## 71. Tool Definition（工具定义）
+
+**专业解释：** 描述工具类型、稳定名称、用途和参数 JSON Schema 的机器可读数据。
+
+**大白话：** 它像 API 服务端交给模型的一份函数接口说明书。
+
+**举例：** `add_numbers` 要求 `a`、`b` 都是必填整数，并禁止额外字段。
+
+**项目用途：** 工具定义由 API 服务端构建，Web 不能随请求扩大可用工具范围。
+
+## 72. Tool Call（工具调用请求）
+
+**专业解释：** Provider 返回的结构化工具请求，包含 Tool Call ID、工具名和序列化参数。
+
+**大白话：** 它是一张等待校验和执行的工单，不是工具结果。
+
+**举例：** `RawToolCall(id="call_123", name="add_numbers", arguments="...")`。
+
+**项目用途：** `validate_tool_call()` 把不可信 Raw Tool Call 转换为可信的 `ValidatedToolCall`。
+
+## 73. Tool Arguments（工具参数）
+
+**专业解释：** 模型为一次 Tool Call 生成的输入数据，在 Provider 边界通常以 JSON 字符串返回。
+
+**大白话：** 模型填写了表单字段，但后端仍要检查字段、类型和数量。
+
+**举例：** `{"a":12,"b":30}` 可通过，`{"a":"12","b":30}` 在严格模式下被拒绝。
+
+**项目用途：** `AddNumbersArguments.model_validate_json()` 负责把原始字符串变成经过校验的 Python 对象。
+
+## 74. Allowlist（允许列表）
+
+**专业解释：** 只允许预先登记的标识继续处理，未登记值一律拒绝的安全策略。
+
+**大白话：** 门卫只放名单上的工具进入，模型临时编出的危险函数名不能通过。
+
+**举例：** `ChatToolName` 当前只允许 `add_numbers`，拒绝 `delete_project`。
+
+**项目用途：** 防止 Provider Tool Call 越过服务端定义的工具能力边界。

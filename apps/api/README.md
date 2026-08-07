@@ -4,7 +4,7 @@
 
 Day 6 已建立 Python 程序入口。Day 7 引入 Pydantic 运行时数据校验。Day 8 使用 FastAPI 和 Uvicorn 建立首个只读 HTTP Health Endpoint。Day 9 由 Next.js Server Component 读取该 Endpoint，验证前后端连接。
 
-当前 API 提供 `GET /health`、`GET /providers`、`POST /chat` 与 `POST /chat/stream`。Day 11 建立 `ChatMessage` 与 `ChatRequest` 数据契约，Day 12 建立 OpenAI-compatible Provider Adapter，Day 13 通过 Dependency Injection 把它们连接成非流式 HTTP 链路，Day 14 使用 SSE 把 Provider 文本分片逐段返回给 Web，Day 16 使用 Provider Registry 按稳定 ID 选择服务端配置，Day 18 增加 `output_mode` 和 `StructuredAnswer` 响应校验。当前未接入数据库、用户或会话业务。
+当前 API 提供 `GET /health`、`GET /providers`、`POST /chat` 与 `POST /chat/stream`。Day 11 建立 `ChatMessage` 与 `ChatRequest` 数据契约，Day 12 建立 OpenAI-compatible Provider Adapter，Day 13 通过 Dependency Injection 把它们连接成非流式 HTTP 链路，Day 14 使用 SSE 把 Provider 文本分片逐段返回给 Web，Day 16 使用 Provider Registry 按稳定 ID 选择服务端配置，Day 18 增加 `output_mode` 和 `StructuredAnswer` 响应校验。Day 19 在 `app/tools` 中新增服务端 Tool Definition 与参数校验边界，但尚未接入 Provider、Route 或 Web，也不会执行工具。当前未接入数据库、用户或会话业务。
 
 Next.js 默认使用 `http://127.0.0.1:8000`，也可以复制 `apps/web/.env.example` 中的 `API_BASE_URL` 配置其他后端地址。
 
@@ -44,7 +44,7 @@ pnpm test:api
 
 当前测试覆盖 Health 路由函数与注册契约，以及 Chat Message Role、非空消息和 Temperature 范围等运行时数据边界。单元测试不代替真实 HTTP 联调。
 
-Day 12 的 Provider 单元测试使用 Mock Client。Day 13 的 HTTP 测试通过 FastAPI Dependency Override 使用 Fake Provider，覆盖成功响应、`422` 请求校验、`502` Provider 无效响应和 `503` 配置缺失。Day 14 的 Fake Stream 测试覆盖多个文本分片、空分片、`delta`、`done` 和流内安全 `error`。Day 16 的 Provider Registry 测试覆盖安全 Catalog、独立环境变量和未配置 Provider。Day 18 的测试覆盖输出模式、JSON Schema 请求参数、非流式/流式结构校验和无效结构错误。这些测试都不读取真实 Key、不请求外部模型，也不消耗 Provider 额度。可用的服务端环境变量名称记录在 `apps/api/.env.example`。
+Day 12 的 Provider 单元测试使用 Mock Client。Day 13 的 HTTP 测试通过 FastAPI Dependency Override 使用 Fake Provider，覆盖成功响应、`422` 请求校验、`502` Provider 无效响应和 `503` 配置缺失。Day 14 的 Fake Stream 测试覆盖多个文本分片、空分片、`delta`、`done` 和流内安全 `error`。Day 16 的 Provider Registry 测试覆盖安全 Catalog、独立环境变量和未配置 Provider。Day 18 的测试覆盖输出模式、JSON Schema 请求参数、非流式/流式结构校验和无效结构错误。Day 19 的工具契约测试覆盖严格服务端 Schema、合法调用、空 ID、未知工具、非法 JSON、缺失/错误/额外参数。这些测试都不读取真实 Key、不请求外部模型，也不消耗 Provider 额度。可用的服务端环境变量名称记录在 `apps/api/.env.example`。
 
 ## 计划职责
 
