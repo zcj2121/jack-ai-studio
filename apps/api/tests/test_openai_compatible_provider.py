@@ -13,9 +13,11 @@ from app.providers.openai_compatible import (
     OpenAICompatibleProvider,
     ProviderConfig,
     ProviderResponseError,
+    ProviderToolCallRequested,
     load_provider_config,
 )
 from app.schemas.chat import ChatOutputMode, ChatRequest, MessageRole
+from app.tools.catalog import get_chat_tool_definitions
 
 
 class ProviderConfigTest(TestCase):
@@ -51,9 +53,11 @@ class FakeCompletions:
         self,
         content: str | None,
         stream_contents: list[str | None] | None = None,
+        tool_calls: list[object] | None = None,
     ) -> None:
         self.content = content
         self.stream_contents = stream_contents
+        self.tool_calls = tool_calls
         self.request: dict[str, object] | None = None
 
     async def create(self, **request: object) -> object:
@@ -67,7 +71,10 @@ class FakeCompletions:
         return SimpleNamespace(
             choices=[
                 SimpleNamespace(
-                    message=SimpleNamespace(content=self.content),
+                    message=SimpleNamespace(
+                        content=self.content,
+                        tool_calls=self.tool_calls,
+                    ),
                 )
             ]
         )
@@ -104,10 +111,12 @@ class FakeOpenAIClient:
         self,
         content: str | None,
         stream_contents: list[str | None] | None = None,
+        tool_calls: list[object] | None = None,
     ) -> None:
         self.completions = FakeCompletions(
             content,
             stream_contents,
+            tool_calls,
         )
         self.chat = SimpleNamespace(completions=self.completions)
 
@@ -157,8 +166,120 @@ class OpenAICompatibleProviderTest(IsolatedAsyncioTestCase):
                     },
                 ],
                 "temperature": 0.3,
+                "tools": get_chat_tool_definitions(),
             },
         )
+
+    async def test_parses_validated_tool_call_without_executing_it(self) -> None:
+        client = FakeOpenAIClient(
+            None,
+            tool_calls=[
+                SimpleNamespace(
+                    id="call_123",
+                    function=SimpleNamespace(
+                        name="add_numbers",
+                        arguments='{"a":12,"b":30}',
+                    ),
+                )
+            ],
+        )
+        provider = OpenAICompatibleProvider(
+            ProviderConfig(api_key="test-secret"),
+            client=cast(AsyncOpenAI, client),
+        )
+        request = ChatRequest.model_validate(
+            {
+                "model": "demo-model",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "请计算 12 加 30",
+                    }
+                ],
+            }
+        )
+
+        completion = await provider.generate_completion(request)
+
+        self.assertIsNone(completion.content)
+        self.assertEqual(len(completion.tool_calls), 1)
+        self.assertEqual(completion.tool_calls[0].id, "call_123")
+        self.assertEqual(completion.tool_calls[0].name, "add_numbers")
+        self.assertEqual(completion.tool_calls[0].arguments.a, 12)
+        self.assertEqual(completion.tool_calls[0].arguments.b, 30)
+        self.assertEqual(
+            client.completions.request["tools"],
+            get_chat_tool_definitions(),
+        )
+
+    async def test_generate_does_not_execute_tool_call(self) -> None:
+        client = FakeOpenAIClient(
+            None,
+            tool_calls=[
+                SimpleNamespace(
+                    id="call_123",
+                    function=SimpleNamespace(
+                        name="add_numbers",
+                        arguments='{"a":12,"b":30}',
+                    ),
+                )
+            ],
+        )
+        provider = OpenAICompatibleProvider(
+            ProviderConfig(api_key="test-secret"),
+            client=cast(AsyncOpenAI, client),
+        )
+        request = ChatRequest.model_validate(
+            {
+                "model": "demo-model",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "请计算 12 加 30",
+                    }
+                ],
+            }
+        )
+
+        with self.assertRaises(ProviderToolCallRequested) as context:
+            await provider.generate(request)
+
+        self.assertEqual(
+            context.exception.tool_calls[0].arguments.a,
+            12,
+        )
+
+    async def test_rejects_invalid_provider_tool_call(self) -> None:
+        client = FakeOpenAIClient(
+            None,
+            tool_calls=[
+                SimpleNamespace(
+                    id="call_123",
+                    function=SimpleNamespace(
+                        name="add_numbers",
+                        arguments='{"a":"12","b":30}',
+                    ),
+                )
+            ],
+        )
+        provider = OpenAICompatibleProvider(
+            ProviderConfig(api_key="test-secret"),
+            client=cast(AsyncOpenAI, client),
+        )
+        request = ChatRequest.model_validate(
+            {
+                "model": "demo-model",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "请计算",
+                    }
+                ],
+            }
+        )
+
+        with self.assertRaises(ProviderResponseError):
+            await provider.generate_completion(request)
 
     async def test_rejects_empty_provider_text(self) -> None:
         client = FakeOpenAIClient("   ")

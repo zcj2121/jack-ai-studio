@@ -2,8 +2,10 @@
 
 import os
 from collections.abc import AsyncIterator, Mapping
+from dataclasses import dataclass
 
 from openai import APIError, AsyncOpenAI
+from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from pydantic import BaseModel, Field, SecretStr, ValidationError
 
 from app.schemas.chat import (
@@ -12,6 +14,13 @@ from app.schemas.chat import (
     ChatRequest,
     MessageRole,
     StructuredAnswer,
+)
+from app.tools.catalog import (
+    RawToolCall,
+    ToolCallValidationError,
+    ValidatedToolCall,
+    get_chat_tool_definitions,
+    validate_tool_call,
 )
 
 API_KEY_ENV_NAME = "AI_PROVIDER_API_KEY"
@@ -35,6 +44,25 @@ class ProviderRequestError(ProviderError):
 
 class ProviderResponseError(ProviderError):
     """Provider 没有返回可展示的文本。"""
+
+
+class ProviderToolCallRequested(ProviderError):
+    """Provider 返回了已校验、但当前 Chat 尚未执行的工具请求。"""
+
+    def __init__(
+        self,
+        tool_calls: tuple[ValidatedToolCall, ...],
+    ) -> None:
+        self.tool_calls = tool_calls
+        super().__init__("Provider requested tool calls")
+
+
+@dataclass(frozen=True)
+class ProviderCompletion:
+    """Provider 一次非流式响应的内部结果。"""
+
+    content: str | None
+    tool_calls: tuple[ValidatedToolCall, ...] = ()
 
 
 def build_response_format(
@@ -115,8 +143,9 @@ class OpenAICompatibleProvider:
         request: ChatRequest,
         *,
         stream: bool = False,
+        include_tools: bool = False,
     ) -> dict[str, object]:
-        """构建 Provider 请求参数，并按需附加结构化输出约束。"""
+        """构建 Provider 请求参数，并按需附加输出和工具约束。"""
 
         payload: dict[str, object] = {
             "model": request.model,
@@ -134,24 +163,66 @@ class OpenAICompatibleProvider:
         if response_format is not None:
             payload["response_format"] = response_format
 
+        if include_tools:
+            payload["tools"] = get_chat_tool_definitions()
+
         if stream:
             payload["stream"] = True
 
         return payload
 
-    async def generate(self, request: ChatRequest) -> ChatMessage:
-        """异步调用 Provider，并返回统一的 Assistant Message。"""
+    @staticmethod
+    def _parse_tool_calls(
+        message: ChatCompletionMessage,
+    ) -> tuple[ValidatedToolCall, ...]:
+        """把 Provider Tool Call 转换为通过服务端契约的调用对象。"""
+
+        raw_tool_calls = getattr(message, "tool_calls", None) or []
+        validated_tool_calls: list[ValidatedToolCall] = []
+
+        for raw_tool_call in raw_tool_calls:
+            function = getattr(raw_tool_call, "function", None)
+            raw_call = {
+                "id": getattr(raw_tool_call, "id", ""),
+                "name": getattr(function, "name", ""),
+                "arguments": getattr(function, "arguments", ""),
+            }
+
+            try:
+                validated_raw_call = RawToolCall.model_validate(raw_call)
+                validated_tool_calls.append(
+                    validate_tool_call(validated_raw_call)
+                )
+            except (ToolCallValidationError, ValidationError) as error:
+                raise ProviderResponseError(
+                    "Provider returned an invalid tool call"
+                ) from error
+
+        return tuple(validated_tool_calls)
+
+    @classmethod
+    def _parse_completion(
+        cls,
+        completion: ChatCompletion,
+        request: ChatRequest,
+    ) -> ProviderCompletion:
+        """解析文本或 Tool Call，避免把未校验数据交给执行层。"""
 
         try:
-            completion = await self._client.chat.completions.create(
-                **self._build_completion_request(request),
-            )
-        except APIError as error:
-            raise ProviderRequestError(
-                "Provider request failed"
+            message = completion.choices[0].message
+        except (AttributeError, IndexError, TypeError) as error:
+            raise ProviderResponseError(
+                "Provider response does not contain an assistant message"
             ) from error
 
-        content = completion.choices[0].message.content
+        tool_calls = cls._parse_tool_calls(message)
+        content = getattr(message, "content", None)
+
+        if tool_calls:
+            return ProviderCompletion(
+                content=content,
+                tool_calls=tool_calls,
+            )
 
         if content is None or not content.strip():
             raise ProviderResponseError(
@@ -161,9 +232,44 @@ class OpenAICompatibleProvider:
         if request.output_mode is ChatOutputMode.STRUCTURED_ANSWER:
             content = validate_structured_answer(content)
 
+        return ProviderCompletion(content=content)
+
+    async def generate_completion(
+        self,
+        request: ChatRequest,
+    ) -> ProviderCompletion:
+        """发送服务端 Tool Definition，并解析 Provider 非流式响应。"""
+
+        try:
+            completion = await self._client.chat.completions.create(
+                **self._build_completion_request(
+                    request,
+                    include_tools=True,
+                ),
+            )
+        except APIError as error:
+            raise ProviderRequestError(
+                "Provider request failed"
+            ) from error
+
+        return self._parse_completion(completion, request)
+
+    async def generate(self, request: ChatRequest) -> ChatMessage:
+        """异步调用 Provider，并返回统一的 Assistant Message。"""
+
+        completion = await self.generate_completion(request)
+
+        if completion.tool_calls:
+            raise ProviderToolCallRequested(completion.tool_calls)
+
+        if completion.content is None:
+            raise ProviderResponseError(
+                "Provider response does not contain assistant text"
+            )
+
         return ChatMessage(
             role=MessageRole.ASSISTANT,
-            content=content,
+            content=completion.content,
         )
 
     async def stream(self, request: ChatRequest) -> AsyncIterator[str]:
