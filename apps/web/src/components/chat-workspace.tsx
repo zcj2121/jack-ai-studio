@@ -11,6 +11,7 @@ import {
   type ChatProviderId,
   type ChatProviderSummary,
   type ChatRequest,
+  createChatCompletion,
   getChatProviders,
   streamChatCompletion,
 } from "@/lib/chat-api";
@@ -22,6 +23,8 @@ interface WorkspaceMessage extends ChatMessage {
   id: number;
   outputMode: ChatOutputMode;
 }
+
+type ChatRunMode = "stream" | "tool";
 
 type StreamRunner = (
   request: ChatRequest,
@@ -38,6 +41,7 @@ export function ChatWorkspace() {
   const [model, setModel] = useState("");
   const [prompt, setPrompt] = useState("");
   const [outputMode, setOutputMode] = useState<ChatOutputMode>("text");
+  const [runMode, setRunMode] = useState<ChatRunMode>("stream");
   const [messages, setMessages] = useState<WorkspaceMessage[]>([]);
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -186,6 +190,41 @@ export function ChatWorkspace() {
     }
   }
 
+  async function runCompletion(
+    displayPrompt: string,
+    request: ChatRequest,
+  ) {
+    const userMessage = createWorkspaceMessage(
+      {
+        role: "user",
+        content: displayPrompt,
+      },
+      request.output_mode,
+    );
+
+    setMessages((currentMessages) => [...currentMessages, userMessage]);
+    setPrompt("");
+    setErrorMessage("");
+    setIsSubmitting(true);
+
+    try {
+      const assistantMessage = await createChatCompletion(request);
+
+      setMessages((currentMessages) => [
+        ...currentMessages,
+        createWorkspaceMessage(assistantMessage, request.output_mode),
+      ]);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof ChatApiError
+          ? error.message
+          : "发送消息时发生未知错误，请稍后重试。",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -193,22 +232,28 @@ export function ChatWorkspace() {
       return;
     }
 
-    await runStream(
-      normalizedPrompt,
-      {
-        provider: selectedProvider.id,
-        model: normalizedModel,
-        messages: [
-          {
-            role: "user",
-            content: normalizedPrompt,
-          },
-        ],
-        temperature: 0.7,
-        output_mode: outputMode,
-      },
-      streamChatCompletion,
-    );
+    const request: ChatRequest = {
+      provider: selectedProvider.id,
+      model: normalizedModel,
+      messages: [
+        {
+          role: "user",
+          content: normalizedPrompt,
+        },
+      ],
+      temperature: 0.7,
+      output_mode: outputMode,
+    };
+
+    if (runMode === "stream") {
+      await runStream(
+        normalizedPrompt,
+        request,
+        streamChatCompletion,
+      );
+    } else {
+      await runCompletion(normalizedPrompt, request);
+    }
   }
 
   async function handleMarkdownDemo() {
@@ -216,6 +261,7 @@ export function ChatWorkspace() {
       return;
     }
 
+    setRunMode("stream");
     await runStream(
       "请演示 Markdown 标题、列表和代码块。",
       {
@@ -242,7 +288,11 @@ export function ChatWorkspace() {
   return (
     <div className="relative flex min-h-[560px] min-w-0 flex-col border border-white/15 bg-white/[0.025]">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-5 py-4 font-mono text-[10px] tracking-[0.16em] text-white/38">
-        <span>POST /CHAT/STREAM · SSE</span>
+        <span>
+          {runMode === "stream"
+            ? "POST /CHAT/STREAM · SSE"
+            : "POST /CHAT · TOOL CALLING"}
+        </span>
         <span
           className={`flex items-center gap-2 ${
             providerCatalogError ? "text-amber-200" : "text-[var(--signal)]"
@@ -268,18 +318,29 @@ export function ChatWorkspace() {
         {messages.length === 0 ? (
           <div className="my-auto max-w-2xl py-10">
             <p className="font-mono text-xs tracking-[0.2em] text-[var(--signal)]">
-              STREAM / RESPONSE
+              {runMode === "stream" ? "STREAM / RESPONSE" : "TOOL / RESPONSE"}
             </p>
             <h1 className="mt-5 text-[clamp(2.7rem,6vw,6rem)] font-semibold leading-[0.88] tracking-[-0.065em]">
-              Watch the answer
+              {runMode === "stream" ? "Watch the answer" : "One tool round"}
               <span className="block font-mono text-[0.62em] font-normal tracking-[-0.04em] text-white/30">
-                arrive in motion.
+                {runMode === "stream"
+                  ? "arrive in motion."
+                  : "one final answer."}
               </span>
             </h1>
             <p className="mt-7 max-w-xl text-sm leading-7 text-white/50 sm:text-base">
-              选择已配置的 Provider，输入对应的 Model ID 和 Prompt。Assistant
-              Message 会随着 SSE Delta 到达逐段增长，API Key 始终留在 FastAPI
-              服务端。
+              {runMode === "stream" ? (
+                <>
+                  选择已配置的 Provider，输入对应的 Model ID 和 Prompt。Assistant
+                  Message 会随着 SSE Delta 到达逐段增长，API Key 始终留在
+                  FastAPI 服务端。
+                </>
+              ) : (
+                <>
+                  选择已配置的 Provider，工具执行完成后展示最终 Assistant
+                  Message。工具目录和 API Key 始终留在 FastAPI 服务端。
+                </>
+              )}
             </p>
           </div>
         ) : (
@@ -318,7 +379,9 @@ export function ChatWorkspace() {
         {isSubmitting ? (
           <div className="flex items-center gap-3 font-mono text-[10px] tracking-[0.16em] text-white/40">
             <span className="size-2 animate-pulse rounded-full bg-[var(--signal)]" />
-            RECEIVING SSE DELTA
+            {runMode === "stream"
+              ? "RECEIVING SSE DELTA"
+              : "RUNNING TOOL FLOW"}
           </div>
         ) : null}
 
@@ -347,6 +410,39 @@ export function ChatWorkspace() {
         onSubmit={handleSubmit}
         className="border-t border-white/10 p-4 sm:p-5"
       >
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <span className="font-mono text-[10px] tracking-[0.16em] text-white/45">
+            REQUEST MODE
+          </span>
+          <div
+            role="group"
+            aria-label="Chat request mode"
+            className="grid grid-cols-2 border border-white/15"
+          >
+            {(
+              [
+                ["stream", "流式对话"],
+                ["tool", "工具调用"],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={runMode === value}
+                onClick={() => setRunMode(value)}
+                disabled={isSubmitting}
+                className={`h-9 min-w-24 px-3 font-mono text-[10px] tracking-[0.12em] transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                  runMode === value
+                    ? "bg-[var(--signal)] text-[var(--ink)]"
+                    : "text-white/45 hover:bg-white/5 hover:text-white"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="grid gap-3 lg:grid-cols-[minmax(150px,0.2fr)_minmax(170px,0.24fr)_minmax(170px,0.24fr)_1fr]">
           <div>
             <label
@@ -479,7 +575,11 @@ export function ChatWorkspace() {
               disabled={!canSubmit}
               className="border border-[var(--signal)] bg-[var(--signal)] px-5 py-2 font-mono text-[10px] font-bold tracking-[0.16em] text-[var(--ink)] transition-opacity hover:opacity-85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--signal)] disabled:cursor-not-allowed disabled:opacity-30"
             >
-              {isSubmitting ? "生成中" : "流式发送"}
+              {isSubmitting
+                ? "生成中"
+                : runMode === "stream"
+                  ? "流式发送"
+                  : "调用工具"}
             </button>
           </div>
         </div>

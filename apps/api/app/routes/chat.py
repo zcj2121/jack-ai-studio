@@ -21,6 +21,10 @@ from app.schemas.chat import (
     ChatProviderSummary,
     ChatRequest,
 )
+from app.services.chat import (
+    ChatOrchestrationError,
+    orchestrate_chat_completion,
+)
 
 router = APIRouter(tags=["chat"])
 
@@ -68,11 +72,11 @@ async def create_chat_completion(
     request: ChatRequest,
     provider: ChatProviderDependency,
 ) -> ChatMessage:
-    """校验 Chat Request，调用 Provider，并返回 Assistant Message。"""
+    """校验请求，执行固定单轮编排，并返回 Assistant Message。"""
 
     try:
-        return await provider.generate(request)
-    except ProviderError as error:
+        return await orchestrate_chat_completion(request, provider)
+    except (ChatOrchestrationError, ProviderError) as error:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="AI Provider returned an invalid response",

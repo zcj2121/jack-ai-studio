@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ChatWorkspace } from "@/components/chat-workspace";
 
 const workspaceNotes = [
-  "Structured Output 由后端 Schema 校验",
+  "Tool Calling 由服务端固定单轮编排",
   "Text / Structured JSON 可切换",
   "Prompt Library 提供本地可复用模板",
   "Provider Catalog 只返回安全元数据",
@@ -32,7 +32,7 @@ export default function ChatPage() {
 
           <div className="flex items-center gap-2 font-mono text-[10px] tracking-[0.18em] text-white/50">
             <span className="size-2 rounded-full bg-amber-300" />
-            STRUCTURED OUTPUT · DAY 18
+            TOOL CALLING · DAY 24
           </div>
         </header>
 
@@ -71,7 +71,7 @@ export default function ChatPage() {
         </section>
 
         <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-white/15 pt-5 font-mono text-[10px] tracking-[0.16em] text-white/35">
-          <span>OUTPUT CONTRACT / PROVIDER / SSE</span>
+          <span>OUTPUT CONTRACT / PROVIDER / TOOLS / SSE</span>
           <Link
             href="/"
             className="text-white/55 transition-colors hover:text-[var(--signal)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--signal)]"

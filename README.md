@@ -4,7 +4,7 @@ Jack AI Studio 是一个面向开发者的 AI Workspace，也是一个 90 天 AI
 
 ## 当前状态
 
-Sprint 1 已完成，Sprint 2 AI Chat 正在推进。目前已建立基础框架、前后端 Health 联通、统一质量门禁、AI Chat 消息契约、OpenAI-compatible Provider Adapter、`text` / `structured_answer` 输出模式，以及 Web → Next.js Route Handler → FastAPI `POST /chat/stream` 的 SSE 流式请求链路。Day 19 已建立服务端 Tool Calling 工具与参数契约，尚未接入 Provider 或执行工具。Web 会逐段展示 Assistant 回答；未配置 Provider Key 时会展示安全错误，不会自动调用真实模型。
+Sprint 1 已完成，Sprint 2 AI Chat 正在推进。目前已建立基础框架、前后端 Health 联通、统一质量门禁、AI Chat 消息契约、OpenAI-compatible Provider Adapter、`text` / `structured_answer` 输出模式，以及 Web → Next.js Route Handler → FastAPI 的 Chat 请求链路。Web 支持 SSE 流式对话和固定单轮 Tool Calling：非流式 `/chat` 可在 Provider 请求工具时执行服务端 `add_numbers`，回传 Tool Result，并展示最终 Assistant Message；当前不支持流式 Tool Calling 或多轮 Agent Loop。未配置 Provider Key 时会展示安全错误，不会自动调用真实模型。
 
 ## 目录
 

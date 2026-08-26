@@ -1,7 +1,7 @@
 """AI Chat Endpoint 的 HTTP 契约测试。"""
 
 import os
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Sequence
 from unittest import TestCase
 from unittest.mock import patch
 
@@ -9,11 +9,14 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.providers.openai_compatible import (
+    ProviderCompletion,
     ProviderError,
     ProviderResponseError,
 )
 from app.routes.chat import get_chat_provider
-from app.schemas.chat import ChatMessage, ChatRequest, MessageRole
+from app.schemas.chat import ChatRequest
+from app.tools.catalog import ChatToolName, ValidatedToolCall
+from app.tools.executor import ToolResult
 
 
 class FakeChatProvider:
@@ -22,19 +25,40 @@ class FakeChatProvider:
     def __init__(self) -> None:
         self.request: ChatRequest | None = None
         self.error: ProviderResponseError | None = None
+        self.completion = ProviderCompletion(
+            content="这是 Fake Provider 返回的测试回答。"
+        )
+        self.follow_up_completion = ProviderCompletion(
+            content="工具计算结果是 42。"
+        )
+        self.follow_up: tuple[
+            Sequence[ValidatedToolCall],
+            Sequence[ToolResult],
+        ] | None = None
         self.stream_chunks = ["第一段", "第二段"]
         self.stream_error: ProviderError | None = None
 
-    async def generate(self, request: ChatRequest) -> ChatMessage:
+    async def generate_completion(
+        self,
+        request: ChatRequest,
+    ) -> ProviderCompletion:
         self.request = request
 
         if self.error is not None:
             raise self.error
 
-        return ChatMessage(
-            role=MessageRole.ASSISTANT,
-            content="这是 Fake Provider 返回的测试回答。",
-        )
+        return self.completion
+
+    async def generate_tool_follow_up_completion(
+        self,
+        request: ChatRequest,
+        tool_calls: Sequence[ValidatedToolCall],
+        tool_results: Sequence[ToolResult],
+    ) -> ProviderCompletion:
+        self.request = request
+        self.follow_up = (tool_calls, tool_results)
+
+        return self.follow_up_completion
 
     async def stream(
         self,
@@ -91,6 +115,48 @@ class ChatEndpointTest(TestCase):
         )
         self.assertEqual(self.provider.request.model, "demo-model")
         self.assertEqual(self.provider.request.temperature, 0.3)
+        self.assertIsNone(self.provider.follow_up)
+
+    def test_executes_tool_call_and_returns_final_assistant_message(
+        self,
+    ) -> None:
+        self.provider.completion = ProviderCompletion(
+            content=None,
+            tool_calls=(
+                ValidatedToolCall(
+                    id="call_123",
+                    name=ChatToolName.ADD_NUMBERS,
+                    arguments={"a": 12, "b": 30},
+                ),
+            ),
+        )
+
+        response = self.client.post(
+            "/chat",
+            json={
+                "model": "demo-model",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "请计算 12 加 30",
+                    }
+                ],
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json(),
+            {
+                "role": "assistant",
+                "content": "工具计算结果是 42。",
+            },
+        )
+        self.assertIsNotNone(self.provider.follow_up)
+        tool_calls, tool_results = self.provider.follow_up
+        self.assertEqual(tool_calls[0].id, "call_123")
+        self.assertEqual(tool_results[0].tool_call_id, "call_123")
+        self.assertEqual(tool_results[0].content, "42")
 
     def test_rejects_invalid_request_before_calling_provider(self) -> None:
         response = self.client.post(
