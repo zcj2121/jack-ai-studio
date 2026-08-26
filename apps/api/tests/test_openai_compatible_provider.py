@@ -10,14 +10,21 @@ from pydantic import ValidationError
 
 from app.providers.openai_compatible import (
     build_response_format,
+    build_tool_follow_up_messages,
     OpenAICompatibleProvider,
     ProviderConfig,
     ProviderResponseError,
     ProviderToolCallRequested,
+    ToolResultCorrelationError,
     load_provider_config,
 )
 from app.schemas.chat import ChatOutputMode, ChatRequest, MessageRole
-from app.tools.catalog import get_chat_tool_definitions
+from app.tools.catalog import (
+    ChatToolName,
+    ValidatedToolCall,
+    get_chat_tool_definitions,
+)
+from app.tools.executor import ToolResult
 
 
 class ProviderConfigTest(TestCase):
@@ -44,6 +51,146 @@ class ProviderConfigTest(TestCase):
     def test_rejects_missing_api_key(self) -> None:
         with self.assertRaises(ValidationError):
             load_provider_config({})
+
+
+class ProviderToolMessageTest(TestCase):
+    """验证 Tool Result 回传消息与调用关联边界。"""
+
+    def setUp(self) -> None:
+        self.request = ChatRequest.model_validate(
+            {
+                "model": "demo-model",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "请分别计算 1+2 和 10+20",
+                    }
+                ],
+            }
+        )
+        self.tool_calls = [
+            ValidatedToolCall(
+                id="call_first",
+                name=ChatToolName.ADD_NUMBERS,
+                arguments={"a": 1, "b": 2},
+            ),
+            ValidatedToolCall(
+                id="call_second",
+                name=ChatToolName.ADD_NUMBERS,
+                arguments={"a": 10, "b": 20},
+            ),
+        ]
+        self.tool_results = [
+            ToolResult(
+                tool_call_id="call_first",
+                name=ChatToolName.ADD_NUMBERS,
+                content="3",
+            ),
+            ToolResult(
+                tool_call_id="call_second",
+                name=ChatToolName.ADD_NUMBERS,
+                content="30",
+            ),
+        ]
+
+    def test_builds_correlated_tool_follow_up_messages(self) -> None:
+        messages = build_tool_follow_up_messages(
+            self.request,
+            self.tool_calls,
+            self.tool_results,
+        )
+
+        self.assertEqual(
+            messages,
+            [
+                {
+                    "role": "user",
+                    "content": "请分别计算 1+2 和 10+20",
+                },
+                {
+                    "role": "assistant",
+                    "content": None,
+                    "tool_calls": [
+                        {
+                            "id": "call_first",
+                            "type": "function",
+                            "function": {
+                                "name": "add_numbers",
+                                "arguments": '{"a":1,"b":2}',
+                            },
+                        },
+                        {
+                            "id": "call_second",
+                            "type": "function",
+                            "function": {
+                                "name": "add_numbers",
+                                "arguments": '{"a":10,"b":20}',
+                            },
+                        },
+                    ],
+                },
+                {
+                    "role": "tool",
+                    "tool_call_id": "call_first",
+                    "content": "3",
+                },
+                {
+                    "role": "tool",
+                    "tool_call_id": "call_second",
+                    "content": "30",
+                },
+            ],
+        )
+
+    def test_rejects_follow_up_without_tool_calls(self) -> None:
+        with self.assertRaises(ToolResultCorrelationError):
+            build_tool_follow_up_messages(self.request, [], [])
+
+    def test_rejects_different_call_and_result_counts(self) -> None:
+        with self.assertRaises(ToolResultCorrelationError):
+            build_tool_follow_up_messages(
+                self.request,
+                self.tool_calls,
+                self.tool_results[:1],
+            )
+
+    def test_rejects_mismatched_result_id_or_name(self) -> None:
+        invalid_results = (
+            ToolResult(
+                tool_call_id="call_unknown",
+                name=ChatToolName.ADD_NUMBERS,
+                content="3",
+            ),
+            ToolResult.model_construct(
+                tool_call_id="call_first",
+                name="future_tool",
+                content="3",
+            ),
+        )
+
+        for invalid_result in invalid_results:
+            with self.subTest(invalid_result=invalid_result):
+                with self.assertRaises(ToolResultCorrelationError):
+                    build_tool_follow_up_messages(
+                        self.request,
+                        self.tool_calls,
+                        [invalid_result, self.tool_results[1]],
+                    )
+
+    def test_rejects_duplicate_tool_call_ids(self) -> None:
+        duplicate_call = self.tool_calls[1].model_copy(
+            update={"id": "call_first"}
+        )
+        duplicate_result = self.tool_results[1].model_copy(
+            update={"tool_call_id": "call_first"}
+        )
+
+        with self.assertRaises(ToolResultCorrelationError):
+            build_tool_follow_up_messages(
+                self.request,
+                [self.tool_calls[0], duplicate_call],
+                [self.tool_results[0], duplicate_result],
+            )
 
 
 class FakeCompletions:

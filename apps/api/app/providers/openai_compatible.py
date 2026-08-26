@@ -1,7 +1,7 @@
 """OpenAI-compatible Provider 的最小异步适配器。"""
 
 import os
-from collections.abc import AsyncIterator, Mapping
+from collections.abc import AsyncIterator, Mapping, Sequence
 from dataclasses import dataclass
 
 from openai import APIError, AsyncOpenAI
@@ -22,6 +22,7 @@ from app.tools.catalog import (
     get_chat_tool_definitions,
     validate_tool_call,
 )
+from app.tools.executor import ToolResult
 
 API_KEY_ENV_NAME = "AI_PROVIDER_API_KEY"
 BASE_URL_ENV_NAME = "AI_PROVIDER_BASE_URL"
@@ -57,12 +58,86 @@ class ProviderToolCallRequested(ProviderError):
         super().__init__("Provider requested tool calls")
 
 
+class ToolResultCorrelationError(ValueError):
+    """Tool Result 无法和原始 Tool Call 一一对应。"""
+
+
 @dataclass(frozen=True)
 class ProviderCompletion:
     """Provider 一次非流式响应的内部结果。"""
 
     content: str | None
     tool_calls: tuple[ValidatedToolCall, ...] = ()
+
+
+def build_tool_follow_up_messages(
+    request: ChatRequest,
+    tool_calls: Sequence[ValidatedToolCall],
+    tool_results: Sequence[ToolResult],
+) -> list[dict[str, object]]:
+    """构造回传 Tool Result 所需的 OpenAI-compatible 消息序列。"""
+
+    if not tool_calls:
+        raise ToolResultCorrelationError(
+            "Tool follow-up requires at least one tool call"
+        )
+
+    if len(tool_calls) != len(tool_results):
+        raise ToolResultCorrelationError(
+            "Tool calls and results must have the same length"
+        )
+
+    tool_call_ids = [tool_call.id for tool_call in tool_calls]
+    if len(set(tool_call_ids)) != len(tool_call_ids):
+        raise ToolResultCorrelationError(
+            "Tool call IDs must be unique"
+        )
+
+    assistant_tool_calls: list[dict[str, object]] = []
+    tool_messages: list[dict[str, object]] = []
+
+    for tool_call, tool_result in zip(tool_calls, tool_results):
+        if (
+            tool_result.tool_call_id != tool_call.id
+            or tool_result.name is not tool_call.name
+        ):
+            raise ToolResultCorrelationError(
+                "Tool result does not match the original tool call"
+            )
+
+        assistant_tool_calls.append(
+            {
+                "id": tool_call.id,
+                "type": "function",
+                "function": {
+                    "name": tool_call.name.value,
+                    "arguments": tool_call.arguments.model_dump_json(),
+                },
+            }
+        )
+        tool_messages.append(
+            {
+                "role": "tool",
+                "tool_call_id": tool_result.tool_call_id,
+                "content": tool_result.content,
+            }
+        )
+
+    return [
+        *[
+            {
+                "role": message.role.value,
+                "content": message.content,
+            }
+            for message in request.messages
+        ],
+        {
+            "role": "assistant",
+            "content": None,
+            "tool_calls": assistant_tool_calls,
+        },
+        *tool_messages,
+    ]
 
 
 def build_response_format(

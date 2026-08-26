@@ -56,7 +56,7 @@ export default async function Home() {
                   : "bg-amber-300"
               }`}
             />
-              DAY 19 · {apiHealth.state.toUpperCase()}
+              DAY 22 · {apiHealth.state.toUpperCase()}
           </div>
         </header>
 
