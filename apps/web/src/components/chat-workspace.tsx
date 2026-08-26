@@ -18,6 +18,12 @@ import {
 import { streamMarkdownDemo } from "@/lib/markdown-demo";
 
 const MAX_PROMPT_LENGTH = 2_000;
+const DEFAULT_MODEL_ID = "gpt-5.6-luna";
+const CHAT_MODEL_IDS = [
+  DEFAULT_MODEL_ID,
+  "gpt-5.6-sol",
+  "gpt-5.6-terra",
+] as const;
 
 interface WorkspaceMessage extends ChatMessage {
   id: number;
@@ -38,7 +44,7 @@ export function ChatWorkspace() {
   const [isProviderCatalogLoading, setIsProviderCatalogLoading] =
     useState(true);
   const [providerCatalogError, setProviderCatalogError] = useState("");
-  const [model, setModel] = useState("");
+  const [model, setModel] = useState(DEFAULT_MODEL_ID);
   const [prompt, setPrompt] = useState("");
   const [outputMode, setOutputMode] = useState<ChatOutputMode>("text");
   const [runMode, setRunMode] = useState<ChatRunMode>("stream");
@@ -61,6 +67,13 @@ export function ChatWorkspace() {
       : selectedProvider?.configured
         ? "SERVER CONFIGURED"
         : "SERVER CONFIG REQUIRED";
+  const serverKeyStatus = isProviderCatalogLoading
+    ? "CHECKING SERVER KEY"
+    : providerCatalogError
+      ? "SERVER KEY STATUS UNKNOWN"
+      : selectedProvider?.configured
+        ? "SERVER KEY READY"
+        : "NO SERVER KEY";
   const canSubmit =
     selectedProvider?.configured === true &&
     normalizedModel.length > 0 &&
@@ -517,15 +530,19 @@ export function ChatWorkspace() {
             >
               MODEL ID
             </label>
-            <input
+            <select
               id="chat-model"
               value={model}
               onChange={(event) => setModel(event.target.value)}
               disabled={isSubmitting}
-              placeholder="provider-model-id"
-              autoComplete="off"
-              className="mt-2 h-12 w-full border border-white/15 bg-black/20 px-3 font-mono text-xs text-white outline-none transition-colors placeholder:text-white/20 focus:border-[var(--signal)] disabled:opacity-40"
-            />
+              className="mt-2 h-12 w-full border border-white/15 bg-black/20 px-3 font-mono text-xs text-white outline-none transition-colors focus:border-[var(--signal)] disabled:opacity-40"
+            >
+              {CHAT_MODEL_IDS.map((modelId) => (
+                <option key={modelId} value={modelId}>
+                  {modelId}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>
@@ -550,7 +567,7 @@ export function ChatWorkspace() {
 
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
           <span className="font-mono text-[10px] tracking-[0.14em] text-white/30">
-            {prompt.length} / {MAX_PROMPT_LENGTH} · NO API KEY IN DEMO
+            {prompt.length} / {MAX_PROMPT_LENGTH} · {serverKeyStatus}
           </span>
 
           <div className="flex gap-2">

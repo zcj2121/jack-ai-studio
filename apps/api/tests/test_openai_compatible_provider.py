@@ -394,6 +394,12 @@ class OpenAICompatibleProviderTest(IsolatedAsyncioTestCase):
             client.completions.request["response_format"],
             build_response_format(ChatOutputMode.STRUCTURED_ANSWER),
         )
+        response_format = client.completions.request["response_format"]
+        self.assertFalse(
+            response_format["json_schema"]["schema"][
+                "additionalProperties"
+            ]
+        )
         self.assertNotIn("tools", client.completions.request)
 
     async def test_rejects_another_tool_call_after_follow_up(
@@ -675,6 +681,39 @@ class OpenAICompatibleProviderTest(IsolatedAsyncioTestCase):
                     {
                         "role": "user",
                         "content": "你好",
+                    }
+                ],
+                "output_mode": "structured_answer",
+            }
+        )
+
+        with self.assertRaises(ProviderResponseError):
+            await provider.generate(request)
+
+    async def test_rejects_extra_structured_response_field(self) -> None:
+        client = FakeOpenAIClient(
+            json.dumps(
+                {
+                    "summary": "结构正确但包含额外字段。",
+                    "key_points": ["拒绝额外字段"],
+                    "example": "unexpected 不属于契约。",
+                    "project_role": "保持响应和 JSON Schema 一致。",
+                    "unexpected": "not allowed",
+                },
+                ensure_ascii=False,
+            )
+        )
+        provider = OpenAICompatibleProvider(
+            ProviderConfig(api_key="test-secret"),
+            client=cast(AsyncOpenAI, client),
+        )
+        request = ChatRequest.model_validate(
+            {
+                "model": "demo-model",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "请结构化回答",
                     }
                 ],
                 "output_mode": "structured_answer",

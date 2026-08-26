@@ -56,7 +56,7 @@ export default async function Home() {
                   : "bg-amber-300"
               }`}
             />
-            DAY 24 · {apiHealth.state.toUpperCase()}
+            DAY 25 · {apiHealth.state.toUpperCase()}
           </div>
         </header>
 
@@ -97,7 +97,7 @@ export default async function Home() {
 
             <div className="mb-4 flex items-center justify-between font-mono text-[10px] tracking-[0.18em] text-white/38">
               <span>MODULE ROADMAP</span>
-              <span>24 / 90</span>
+              <span>25 / 90</span>
             </div>
 
             <div className="grid gap-px bg-white/10">

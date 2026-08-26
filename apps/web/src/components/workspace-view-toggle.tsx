@@ -5,8 +5,8 @@ import { useState } from "react";
 type WorkspaceView = "learning" | "product";
 
 const viewContent: Record<WorkspaceView, string> = {
-  learning: "当前视图：理解 Tool Calling 单轮编排，并让每个概念落到真实代码。",
-  product: "产品视图：AI Chat 已支持流式对话、Structured Output 和固定单轮工具调用。",
+  learning: "当前视图：Sprint 2 AI Chat V1 已完成，下一步从 Day 26 进入后端与数据持久化。",
+  product: "产品视图：AI Chat V1 支持多 Provider、流式对话、Structured Output 和固定单轮工具调用。",
 };
 
 export function WorkspaceViewToggle() {

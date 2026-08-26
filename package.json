@@ -4,7 +4,7 @@
   "private": true,
   "packageManager": "pnpm@10.28.1",
   "scripts": {
-    "dev:api": "uv run uvicorn app.main:app --app-dir apps/api --host 127.0.0.1 --port 8000",
+    "dev:api": "sh scripts/dev-api.sh",
     "dev:web": "pnpm --filter @jack-ai-studio/web dev",
     "build:web": "pnpm --filter @jack-ai-studio/web build",
     "lint:web": "pnpm --filter @jack-ai-studio/web lint",

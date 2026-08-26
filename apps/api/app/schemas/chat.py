@@ -2,7 +2,7 @@
 
 from enum import StrEnum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class MessageRole(StrEnum):
@@ -36,6 +36,8 @@ class ChatMessage(BaseModel):
 
 class StructuredAnswer(BaseModel):
     """结构化回答必须满足的固定字段契约。"""
+
+    model_config = ConfigDict(extra="forbid")
 
     summary: str = Field(min_length=1)
     key_points: list[str] = Field(min_length=1)
