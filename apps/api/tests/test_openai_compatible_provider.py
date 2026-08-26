@@ -15,6 +15,7 @@ from app.providers.openai_compatible import (
     ProviderConfig,
     ProviderResponseError,
     ProviderToolCallRequested,
+    ProviderToolRoundLimitError,
     ToolResultCorrelationError,
     load_provider_config,
 )
@@ -270,6 +271,179 @@ class FakeOpenAIClient:
 
 class OpenAICompatibleProviderTest(IsolatedAsyncioTestCase):
     """验证异步调用、参数转换与响应边界。"""
+
+    @staticmethod
+    def build_tool_follow_up_context(
+        *,
+        output_mode: ChatOutputMode = ChatOutputMode.TEXT,
+    ) -> tuple[ChatRequest, list[ValidatedToolCall], list[ToolResult]]:
+        request = ChatRequest(
+            model="demo-model",
+            messages=[
+                {
+                    "role": "user",
+                    "content": "请计算 12 加 30",
+                }
+            ],
+            temperature=0.2,
+            output_mode=output_mode,
+        )
+        tool_calls = [
+            ValidatedToolCall(
+                id="call_123",
+                name=ChatToolName.ADD_NUMBERS,
+                arguments={"a": 12, "b": 30},
+            )
+        ]
+        tool_results = [
+            ToolResult(
+                tool_call_id="call_123",
+                name=ChatToolName.ADD_NUMBERS,
+                content="42",
+            )
+        ]
+        return request, tool_calls, tool_results
+
+    async def test_generates_final_completion_after_tool_follow_up(
+        self,
+    ) -> None:
+        client = FakeOpenAIClient("12 加 30 的结果是 42。")
+        provider = OpenAICompatibleProvider(
+            ProviderConfig(api_key="test-secret"),
+            client=cast(AsyncOpenAI, client),
+        )
+        request, tool_calls, tool_results = (
+            self.build_tool_follow_up_context()
+        )
+
+        completion = await provider.generate_tool_follow_up_completion(
+            request,
+            tool_calls,
+            tool_results,
+        )
+
+        self.assertEqual(completion.content, "12 加 30 的结果是 42。")
+        self.assertEqual(completion.tool_calls, ())
+        self.assertEqual(
+            client.completions.request,
+            {
+                "model": "demo-model",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "请计算 12 加 30",
+                    },
+                    {
+                        "role": "assistant",
+                        "content": None,
+                        "tool_calls": [
+                            {
+                                "id": "call_123",
+                                "type": "function",
+                                "function": {
+                                    "name": "add_numbers",
+                                    "arguments": '{"a":12,"b":30}',
+                                },
+                            }
+                        ],
+                    },
+                    {
+                        "role": "tool",
+                        "tool_call_id": "call_123",
+                        "content": "42",
+                    },
+                ],
+                "temperature": 0.2,
+            },
+        )
+
+    async def test_validates_structured_tool_follow_up_completion(
+        self,
+    ) -> None:
+        structured_content = json.dumps(
+            {
+                "summary": "12 加 30 等于 42。",
+                "key_points": ["使用 add_numbers", "结果是 42"],
+                "example": "12 + 30 = 42",
+                "project_role": "验证工具结果可以形成最终结构化回答。",
+            },
+            ensure_ascii=False,
+        )
+        client = FakeOpenAIClient(structured_content)
+        provider = OpenAICompatibleProvider(
+            ProviderConfig(api_key="test-secret"),
+            client=cast(AsyncOpenAI, client),
+        )
+        request, tool_calls, tool_results = (
+            self.build_tool_follow_up_context(
+                output_mode=ChatOutputMode.STRUCTURED_ANSWER,
+            )
+        )
+
+        completion = await provider.generate_tool_follow_up_completion(
+            request,
+            tool_calls,
+            tool_results,
+        )
+
+        self.assertEqual(
+            json.loads(completion.content or ""),
+            json.loads(structured_content),
+        )
+        self.assertEqual(
+            client.completions.request["response_format"],
+            build_response_format(ChatOutputMode.STRUCTURED_ANSWER),
+        )
+        self.assertNotIn("tools", client.completions.request)
+
+    async def test_rejects_another_tool_call_after_follow_up(
+        self,
+    ) -> None:
+        client = FakeOpenAIClient(
+            None,
+            tool_calls=[
+                SimpleNamespace(
+                    id="call_again",
+                    function=SimpleNamespace(
+                        name="add_numbers",
+                        arguments='{"a":1,"b":2}',
+                    ),
+                )
+            ],
+        )
+        provider = OpenAICompatibleProvider(
+            ProviderConfig(api_key="test-secret"),
+            client=cast(AsyncOpenAI, client),
+        )
+        request, tool_calls, tool_results = (
+            self.build_tool_follow_up_context()
+        )
+
+        with self.assertRaises(ProviderToolRoundLimitError):
+            await provider.generate_tool_follow_up_completion(
+                request,
+                tool_calls,
+                tool_results,
+            )
+
+        self.assertNotIn("tools", client.completions.request)
+
+    async def test_rejects_empty_tool_follow_up_text(self) -> None:
+        client = FakeOpenAIClient("   ")
+        provider = OpenAICompatibleProvider(
+            ProviderConfig(api_key="test-secret"),
+            client=cast(AsyncOpenAI, client),
+        )
+        request, tool_calls, tool_results = (
+            self.build_tool_follow_up_context()
+        )
+
+        with self.assertRaises(ProviderResponseError):
+            await provider.generate_tool_follow_up_completion(
+                request,
+                tool_calls,
+                tool_results,
+            )
 
     async def test_generates_assistant_message(self) -> None:
         client = FakeOpenAIClient("这是 Provider 返回的文本。")

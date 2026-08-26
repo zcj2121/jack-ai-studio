@@ -47,6 +47,10 @@ class ProviderResponseError(ProviderError):
     """Provider 没有返回可展示的文本。"""
 
 
+class ProviderToolRoundLimitError(ProviderResponseError):
+    """Provider 在单次 Tool Result 回传后仍请求调用工具。"""
+
+
 class ProviderToolCallRequested(ProviderError):
     """Provider 返回了已校验、但当前 Chat 尚未执行的工具请求。"""
 
@@ -217,6 +221,7 @@ class OpenAICompatibleProvider:
     def _build_completion_request(
         request: ChatRequest,
         *,
+        messages: Sequence[Mapping[str, object]] | None = None,
         stream: bool = False,
         include_tools: bool = False,
     ) -> dict[str, object]:
@@ -224,13 +229,17 @@ class OpenAICompatibleProvider:
 
         payload: dict[str, object] = {
             "model": request.model,
-            "messages": [
-                {
-                    "role": message.role.value,
-                    "content": message.content,
-                }
-                for message in request.messages
-            ],
+            "messages": (
+                list(messages)
+                if messages is not None
+                else [
+                    {
+                        "role": message.role.value,
+                        "content": message.content,
+                    }
+                    for message in request.messages
+                ]
+            ),
             "temperature": request.temperature,
         }
 
@@ -328,6 +337,41 @@ class OpenAICompatibleProvider:
             ) from error
 
         return self._parse_completion(completion, request)
+
+    async def generate_tool_follow_up_completion(
+        self,
+        request: ChatRequest,
+        tool_calls: Sequence[ValidatedToolCall],
+        tool_results: Sequence[ToolResult],
+    ) -> ProviderCompletion:
+        """回传一次 Tool Result，并要求 Provider 返回最终文本。"""
+
+        messages = build_tool_follow_up_messages(
+            request,
+            tool_calls,
+            tool_results,
+        )
+
+        try:
+            completion = await self._client.chat.completions.create(
+                **self._build_completion_request(
+                    request,
+                    messages=messages,
+                ),
+            )
+        except APIError as error:
+            raise ProviderRequestError(
+                "Provider tool follow-up request failed"
+            ) from error
+
+        parsed_completion = self._parse_completion(completion, request)
+        if parsed_completion.tool_calls:
+            raise ProviderToolRoundLimitError(
+                "Provider requested another tool call after the single "
+                "follow-up round"
+            )
+
+        return parsed_completion
 
     async def generate(self, request: ChatRequest) -> ChatMessage:
         """异步调用 Provider，并返回统一的 Assistant Message。"""
