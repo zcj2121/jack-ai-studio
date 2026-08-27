@@ -5,7 +5,7 @@ import { useState } from "react";
 type WorkspaceView = "learning" | "product";
 
 const viewContent: Record<WorkspaceView, string> = {
-  learning: "当前视图：Sprint 2 AI Chat V1 已完成，下一步从 Day 26 进入后端与数据持久化。",
+  learning: "当前视图：Day 26 配置边界已完成，下一步从 Day 27 进入 SQLAlchemy/PostgreSQL。",
   product: "产品视图：AI Chat V1 支持多 Provider、流式对话、Structured Output 和固定单轮工具调用。",
 };
 

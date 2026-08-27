@@ -5,10 +5,13 @@ import sys
 from fastapi import FastAPI
 from pydantic import BaseModel, Field, ValidationError
 
+from app.core.config import get_settings
 from app.routes.chat import router as chat_router
 
+settings = get_settings()
+
 SERVICE_INFO: dict[str, object] = {
-    "name": "Jack AI Studio API",
+    "name": settings.app_name,
     "status": "foundation ready",
 }
 
@@ -29,8 +32,8 @@ class ServiceStatus(BaseModel):
 
 
 app = FastAPI(
-    title="Jack AI Studio API",
-    version="0.1.0",
+    title=settings.app_name,
+    version=settings.app_version,
 )
 app.include_router(chat_router)
 

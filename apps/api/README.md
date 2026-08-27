@@ -4,7 +4,7 @@
 
 Day 6 已建立 Python 程序入口。Day 7 引入 Pydantic 运行时数据校验。Day 8 使用 FastAPI 和 Uvicorn 建立首个只读 HTTP Health Endpoint。Day 9 由 Next.js Server Component 读取该 Endpoint，验证前后端连接。
 
-当前 API 提供 `GET /health`、`GET /providers`、`POST /chat` 与 `POST /chat/stream`。Day 11～18 建立 Chat 契约、Provider Adapter、HTTP/SSE、多 Provider 与 Structured Output；Day 19～24 完成严格 Tool Call 校验、Executor、Tool Result Follow-up 和固定单轮 Chat Orchestrator。当前未接入数据库、用户或会话业务，也不支持多轮 Agent Loop。
+当前 API 提供 `GET /health`、`GET /providers`、`POST /chat` 与 `POST /chat/stream`。Day 11～18 建立 Chat 契约、Provider Adapter、HTTP/SSE、多 Provider 与 Structured Output；Day 19～24 完成严格 Tool Call 校验、Executor、Tool Result Follow-up 和固定单轮 Chat Orchestrator；Day 26 新增 `app/core/config.py`，统一校验 `JACK_` 前缀的应用配置。当前未接入数据库、用户或会话业务，也不支持多轮 Agent Loop。
 
 Next.js 默认使用 `http://127.0.0.1:8000`，也可以复制 `apps/web/.env.example` 中的 `API_BASE_URL` 配置其他后端地址。
 
@@ -41,6 +41,8 @@ AI_PROVIDER_OPENROUTER_BASE_URL=
 ```
 
 `pnpm dev:api` 会在该文件存在时通过 `uv run --env-file` 加载配置。修改 Key 后需要重启 API；Key 只进入 FastAPI 进程，不会由 `GET /providers`、HTTP 错误或 Web 页面返回。生产环境应由部署平台的 Secret Manager 注入，不使用本地 `.env`。
+
+Day 26 的 `Settings` 会从环境变量读取 `JACK_ENVIRONMENT`、`JACK_API_HOST`、`JACK_API_PORT`、`JACK_DATABASE_URL` 和 `JACK_REDIS_URL`，并在 API 进程启动边界校验类型、范围和允许值。当前只保存可选连接配置，不建立 PostgreSQL 或 Redis 网络连接；数据库连接和会话边界从后续 Day 开始。
 
 启动后访问：
 
