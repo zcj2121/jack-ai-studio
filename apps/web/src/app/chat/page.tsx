@@ -32,7 +32,7 @@ export default function ChatPage() {
 
           <div className="flex items-center gap-2 font-mono text-[10px] tracking-[0.18em] text-white/50">
             <span className="size-2 rounded-full bg-amber-300" />
-            AI CHAT V1 · DAY 26
+            AI CHAT V1 · DAY 27
           </div>
         </header>
 

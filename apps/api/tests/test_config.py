@@ -62,3 +62,6 @@ class SettingsTest(TestCase):
 
         with self.assertRaises(ValidationError):
             Settings(_env_file=None, api_port=70000)
+
+        with self.assertRaises(ValidationError):
+            Settings(_env_file=None, database_url="sqlite:///jack.db")

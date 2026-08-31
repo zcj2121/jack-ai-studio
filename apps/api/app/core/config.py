@@ -36,6 +36,17 @@ class Settings(BaseSettings):
             return None
         return value
 
+    @field_validator("database_url")
+    @classmethod
+    def validate_database_url(cls, value: str | None) -> str | None:
+        """限制数据库配置使用 PostgreSQL URL。"""
+
+        if value is not None and not value.startswith(
+            ("postgresql://", "postgresql+asyncpg://")
+        ):
+            raise ValueError("database_url must use PostgreSQL")
+        return value
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
