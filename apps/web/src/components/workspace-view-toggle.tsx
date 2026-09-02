@@ -5,7 +5,7 @@ import { useState } from "react";
 type WorkspaceView = "learning" | "product";
 
 const viewContent: Record<WorkspaceView, string> = {
-  learning: "当前视图：Day 28 User Model 与 Repository 已完成，下一步进入 Day 29。",
+  learning: "当前视图：Day 29 Alembic Migration 已完成，下一步进入 Day 30。",
   product: "产品视图：AI Chat V1 支持多 Provider、流式对话、Structured Output 和固定单轮工具调用。",
 };
 

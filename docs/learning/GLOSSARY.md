@@ -781,3 +781,53 @@
 **举例：** `UserRepository.add()` 调用 `flush()`，但不调用 `commit()`。
 
 **项目用途：** 保证未来一组用户、会话和消息操作可以由 Service 统一提交或回滚。
+
+## 79. Alembic（数据库结构迁移工具）
+
+**专业解释：** SQLAlchemy 生态中的数据库 Migration 工具，通过带版本的 Python revision 文件管理结构演进。
+
+**大白话：** 它像数据库的 Git，记录表结构如何一步步变化。
+
+**举例：** `alembic upgrade head` 按版本链应用所有待执行变更。
+
+**项目用途：** 管理 Jack AI Studio 的用户、会话和消息表结构，保证环境升级可重复。
+
+## 80. Revision（迁移版本）
+
+**专业解释：** 带唯一 ID、父版本和升级/回退函数的数据库结构变更单元。
+
+**大白话：** 每次表结构变化都有编号明确的施工记录。
+
+**举例：** `20260902_0001` 是当前 `users` 表初始 revision。
+
+**项目用途：** 让数据库结构变更可审阅、可追踪、可回退。
+
+## 81. Upgrade / Downgrade（升级 / 回退）
+
+**专业解释：** Upgrade 向前应用 revision，Downgrade 按反向路径撤销 revision。
+
+**大白话：** 一个负责施工到新版本，一个负责按方案退回旧版本。
+
+**举例：** `upgrade head` 创建 `users` 表，`downgrade base` 删除它。
+
+**项目用途：** 支持部署升级和受控回滚，不使用手工 SQL 拼接环境差异。
+
+## 82. Offline Migration（离线迁移）
+
+**专业解释：** 不建立数据库连接，只根据配置和 revision 生成待执行 SQL 的迁移模式。
+
+**大白话：** 先打印施工清单供审核，不进数据库现场施工。
+
+**举例：** `alembic upgrade head --sql` 输出 `CREATE TABLE users`。
+
+**项目用途：** 在没有 PostgreSQL 的开发环境验证 SQL 和 Migration 结构。
+
+## 83. Target Metadata（目标元数据）
+
+**专业解释：** Alembic 用来代表代码期望数据库结构的 SQLAlchemy `MetaData` 对象。
+
+**大白话：** 它是 Migration 对照的最新表目录。
+
+**举例：** `target_metadata = Base.metadata`，并导入 `User` 注册 `users` 表。
+
+**项目用途：** 连接 ORM Model 与未来的结构差异检查、autogenerate 流程。
