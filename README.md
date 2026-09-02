@@ -4,7 +4,7 @@ Jack AI Studio 是一个面向开发者的 AI Workspace，也是一个 90 天 AI
 
 ## 当前状态
 
-Sprint 1 与 Sprint 2 已完成，Sprint 3 正在进行 Day 28。Day 26 已建立 FastAPI 配置边界，Day 27 已新增按需创建的 AsyncEngine、连接池和请求范围 AsyncSession；Day 28 已建立 `Base`、`User` ORM Model 与 `UserRepository`，当前不建立真实 PostgreSQL 连接、Migration、登录或持久化 HTTP 接口。目前已建立基础框架、前后端 Health 联通、统一质量门禁、AI Chat 消息契约、OpenAI-compatible Provider Adapter、`text` / `structured_answer` 输出模式，以及 Web → Next.js Route Handler → FastAPI 的 Chat 请求链路。Web 支持 SSE 流式对话和固定单轮 Tool Calling；Text、SSE、Structured Output 和 Tool Calling 已通过一次显式第三方 OpenAI-compatible Provider 真实验收；当前不支持流式 Tool Calling、多轮 Agent Loop 或数据持久化。
+Sprint 1 与 Sprint 2 已完成，Sprint 3 已完成 Day 28，Day 29 待开始。Day 26 已建立 FastAPI 配置边界，Day 27 已新增按需创建的 AsyncEngine、连接池和请求范围 AsyncSession；Day 28 已建立 `Base`、`User` ORM Model 与 `UserRepository`，当前不建立真实 PostgreSQL 连接、Migration、登录或持久化 HTTP 接口。目前已建立基础框架、前后端 Health 联通、统一质量门禁、AI Chat 消息契约、OpenAI-compatible Provider Adapter、`text` / `structured_answer` 输出模式，以及 Web → Next.js Route Handler → FastAPI 的 Chat 请求链路。Web 支持 SSE 流式对话和固定单轮 Tool Calling；Text、SSE、Structured Output 和 Tool Calling 已通过一次显式第三方 OpenAI-compatible Provider 真实验收；当前不支持流式 Tool Calling、多轮 Agent Loop 或数据持久化。
 
 ## 目录
 
