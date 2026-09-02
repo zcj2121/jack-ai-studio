@@ -741,3 +741,43 @@
 **举例：** `ChatToolName` 当前只允许 `add_numbers`，拒绝 `delete_project`。
 
 **项目用途：** 防止 Provider Tool Call 越过服务端定义的工具能力边界。
+
+## 75. ORM Model（对象关系映射模型）
+
+**专业解释：** 使用代码声明数据库表、列、类型和约束，并在 Python 对象与关系型数据库记录之间建立映射的模型。
+
+**大白话：** 它是“知道自己要落哪张表”的后端实体，不只是普通的数据字典。
+
+**举例：** `User.email` 映射 `users.email`，并声明为非空且唯一。
+
+**项目用途：** `apps/api/app/models/user.py` 为后续用户、会话和消息持久化提供数据库实体边界。
+
+## 76. Declarative Base（声明式基类）
+
+**专业解释：** SQLAlchemy ORM Model 共同继承的基类，集中持有已注册表结构的 `MetaData`。
+
+**大白话：** 它像所有数据库表定义的总目录。
+
+**举例：** `class User(Base)` 声明后，`Base.metadata` 可以发现 `users` 表。
+
+**项目用途：** `apps/api/app/db/base.py` 提供未来 Migration 读取的统一元数据入口。
+
+## 77. Repository（仓储层）
+
+**专业解释：** 封装实体查询和写入操作的数据访问层，向业务 Service 提供稳定接口。
+
+**大白话：** 业务代码说“按邮箱找用户”，不用自己拼每一条 SQLAlchemy 查询。
+
+**举例：** `UserRepository.get_by_email()` 返回一个 `User` 或 `None`。
+
+**项目用途：** 隔离 `User` 数据访问细节，并把事务提交留给未来 Service。
+
+## 78. Flush（刷新事务变更）
+
+**专业解释：** 将当前 Session 的待处理变更发送到数据库，使约束和生成值尽早生效，但不结束当前事务。
+
+**大白话：** 先把修改送去处理，最终是否盖章还要等 `commit()`。
+
+**举例：** `UserRepository.add()` 调用 `flush()`，但不调用 `commit()`。
+
+**项目用途：** 保证未来一组用户、会话和消息操作可以由 Service 统一提交或回滚。

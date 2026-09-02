@@ -4,7 +4,7 @@
 
 Day 6 已建立 Python 程序入口。Day 7 引入 Pydantic 运行时数据校验。Day 8 使用 FastAPI 和 Uvicorn 建立首个只读 HTTP Health Endpoint。Day 9 由 Next.js Server Component 读取该 Endpoint，验证前后端连接。
 
-当前 API 提供 `GET /health`、`GET /providers`、`POST /chat` 与 `POST /chat/stream`。Day 11～18 建立 Chat 契约、Provider Adapter、HTTP/SSE、多 Provider 与 Structured Output；Day 19～24 完成严格 Tool Call 校验、Executor、Tool Result Follow-up 和固定单轮 Chat Orchestrator；Day 26 新增 `app/core/config.py`，统一校验 `JACK_` 前缀的应用配置；Day 27 新增 `app/db/session.py`，建立 SQLAlchemy AsyncEngine 和请求范围 AsyncSession 边界。当前未接入数据库、用户或会话业务，也不支持多轮 Agent Loop。
+当前 API 提供 `GET /health`、`GET /providers`、`POST /chat` 与 `POST /chat/stream`。Day 11～18 建立 Chat 契约、Provider Adapter、HTTP/SSE、多 Provider 与 Structured Output；Day 19～24 完成严格 Tool Call 校验、Executor、Tool Result Follow-up 和固定单轮 Chat Orchestrator；Day 26 新增 `app/core/config.py`，统一校验 `JACK_` 前缀的应用配置；Day 27 新增 `app/db/session.py`，建立 SQLAlchemy AsyncEngine 和请求范围 AsyncSession 边界；Day 28 新增 `app/db/base.py`、`app/models/user.py` 与 `app/repositories/user.py`，建立最小 ORM Model/Repository 边界。当前未接入真实数据库、用户 HTTP 或会话业务，也不支持多轮 Agent Loop。
 
 Next.js 默认使用 `http://127.0.0.1:8000`，也可以复制 `apps/web/.env.example` 中的 `API_BASE_URL` 配置其他后端地址。
 
